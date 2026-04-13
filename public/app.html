@@ -1693,7 +1693,7 @@ function render4473List() {
       '<td style="color:var(--muted)">' + esc(f.manufacturer ? f.manufacturer + ' ' + f.model : (f.firearm_id ? 'Record #' + f.firearm_id : '—')) + '</td>' +
       '<td style="color:var(--dim)">' + fmtDate(f.transfer_date) + '</td>' +
       '<td><span class="tbl-btn tbl-btn--' + nicsColor + '">' + nics.toUpperCase() + '</span></td>' +
-      '<td></td>' +
+      '<td><button class="tbl-btn tbl-btn--dispose" onclick="print4473(' + f.id + ')">🖨 Print</button></td>' +
     '</tr>';
   }).join('');
 }
@@ -1727,6 +1727,71 @@ function open4473New() {
 }
 
 function cancel4473() { render4473List(); }
+
+function print4473(id) {
+  var f = allForms4473.find(function(x){ return x.id == id; });
+  if (!f) return;
+  var firearmLabel = f.manufacturer ? (f.manufacturer + ' ' + f.model + ' — SN: ' + (f.serial_number || '')) : (f.firearm_id ? 'Record #' + f.firearm_id : '—');
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>ATF Form 4473 — ' + esc(f.transferee_name || '') + '</title>' +
+  '<style>body{font-family:Arial,sans-serif;font-size:11px;margin:20px;color:#000}' +
+  'h1{font-size:16px;text-align:center;margin-bottom:4px}' +
+  '.subtitle{text-align:center;font-size:11px;margin-bottom:20px;color:#333}' +
+  'table{width:100%;border-collapse:collapse;margin-bottom:16px}' +
+  'td,th{border:1px solid #000;padding:5px 8px;vertical-align:top}' +
+  'th{background:#eee;font-weight:bold;font-size:10px;text-transform:uppercase}' +
+  '.section-title{background:#333;color:#fff;font-weight:bold;padding:6px 8px;font-size:11px;margin-top:16px;margin-bottom:0}' +
+  '.label{color:#555;font-size:9px;display:block;margin-bottom:2px}' +
+  '.val{font-weight:bold}' +
+  '.sig-box{border:1px solid #000;height:50px;margin-top:4px}' +
+  '@media print{body{margin:8px}button{display:none}}' +
+  '</style></head><body>' +
+  '<h1>ATF Form 4473 — Firearms Transaction Record</h1>' +
+  '<div class="subtitle">Bureau of Alcohol, Tobacco, Firearms and Explosives | OMB No. 1140-0020</div>' +
+  '<button onclick="window.print()" style="display:block;margin:0 auto 16px;padding:8px 24px;background:#c41e3a;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px">🖨 Print / Save PDF</button>' +
+  '<div class="section-title">SECTION A — BUYER (TRANSFEREE) INFORMATION</div>' +
+  '<table><tr>' +
+  '<td style="width:25%"><span class="label">Last Name</span><span class="val">' + esc(f.transferee_name ? f.transferee_name.split(',')[0] : '—') + '</span></td>' +
+  '<td style="width:20%"><span class="label">First Name</span><span class="val">' + esc(f.transferee_name ? (f.transferee_name.split(',')[1]||'').trim() : '—') + '</span></td>' +
+  '<td style="width:15%"><span class="label">Date of Birth</span><span class="val">' + esc(f.transferee_dob||'—') + '</span></td>' +
+  '<td style="width:15%"><span class="label">Gender</span><span class="val">' + esc(f.transferee_gender||'—') + '</span></td>' +
+  '<td style="width:25%"><span class="label">ID Type / Number</span><span class="val">' + esc((f.transferee_id_type||'—') + ' / ' + (f.transferee_id_num||'—')) + '</span></td>' +
+  '</tr><tr>' +
+  '<td colspan="3"><span class="label">Address</span><span class="val">' + esc(f.transferee_address||'—') + '</span></td>' +
+  '<td><span class="label">City</span><span class="val">' + esc(f.transferee_city||'—') + '</span></td>' +
+  '<td><span class="label">State / ZIP</span><span class="val">' + esc((f.transferee_state||'—') + ' ' + (f.transferee_zip||'')) + '</span></td>' +
+  '</tr></table>' +
+  '<div class="section-title">SECTION B — FIREARM INFORMATION</div>' +
+  '<table><tr>' +
+  '<td><span class="label">Firearm Description</span><span class="val">' + esc(firearmLabel) + '</span></td>' +
+  '<td><span class="label">Transaction Date</span><span class="val">' + esc(f.transfer_date||'—') + '</span></td>' +
+  '</tr></table>' +
+  '<div class="section-title">SECTION C — ELIGIBILITY QUESTIONS (21)</div>' +
+  '<table>' +
+  '<tr><th>Question</th><th style="width:60px">Answer</th></tr>' +
+  '<tr><td>c. Convicted of a felony or crime punishable by imprisonment for more than one year?</td><td style="text-align:center">' + (f.is_felon ? '<b>YES</b>' : 'No') + '</td></tr>' +
+  '<tr><td>d. Fugitive from justice?</td><td style="text-align:center">' + (f.is_fugitive ? '<b>YES</b>' : 'No') + '</td></tr>' +
+  '<tr><td>e. Unlawful user of controlled substance?</td><td style="text-align:center">' + (f.is_drug_user ? '<b>YES</b>' : 'No') + '</td></tr>' +
+  '<tr><td>f. Adjudicated as mental defective or committed to mental institution?</td><td style="text-align:center">' + (f.is_mental_health ? '<b>YES</b>' : 'No') + '</td></tr>' +
+  '<tr><td>i. Subject to domestic violence restraining order / convicted of domestic violence?</td><td style="text-align:center">' + (f.is_domestic_violence ? '<b>YES</b>' : 'No') + '</td></tr>' +
+  '<tr><td>l. U.S. Citizen or National?</td><td style="text-align:center">' + (f.is_us_citizen ? 'Yes' : '<b>NO</b>') + '</td></tr>' +
+  '</table>' +
+  '<div class="section-title">SECTION D — NICS / DEALER INFORMATION</div>' +
+  '<table><tr>' +
+  '<td><span class="label">NICS Transaction Number</span><span class="val">' + esc(f.nics_transaction||'—') + '</span></td>' +
+  '<td><span class="label">NICS Result</span><span class="val">' + esc((f.nics_result||'Pending').toUpperCase()) + '</span></td>' +
+  '<td><span class="label">Notes</span><span class="val">' + esc(f.notes||'—') + '</span></td>' +
+  '</tr></table>' +
+  '<div class="section-title">SIGNATURES</div>' +
+  '<table><tr>' +
+  '<td style="width:50%"><span class="label">Buyer Signature</span><div class="sig-box"></div><span class="label" style="margin-top:4px">Date: _______________</span></td>' +
+  '<td style="width:50%"><span class="label">Seller / FFL Signature</span><div class="sig-box"></div><span class="label" style="margin-top:4px">Date: _______________</span></td>' +
+  '</tr></table>' +
+  '<p style="font-size:9px;color:#555;margin-top:16px">This form is a digital record generated by GunVault FFL Software. Retain for your records per ATF requirements (20 years or duration of business).</p>' +
+  '</body></html>';
+  var w = window.open('', '_blank', 'width=900,height=700');
+  w.document.write(html);
+  w.document.close();
+}
 
 function autoFill4473Customer() {
   var cid = document.getElementById('f-customer-link').value;

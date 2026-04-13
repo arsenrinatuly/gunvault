@@ -13,7 +13,23 @@ const app        = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'change_me_in_production';
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'admin123';
 
-app.use(cors());
+// Trust Vercel's proxy (required for correct IP + rate limiting)
+app.set('trust proxy', 1);
+
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://gunvault.vercel.app',
+  process.env.APP_URL,
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, cb) => {
+    // allow server-to-server (no origin) and allowed list
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
