@@ -196,13 +196,14 @@ app.post('/api/app/onboarding/complete', requireAuth, async (req, res) => {
 app.get('/api/app/dashboard', requireAuth, async (req, res) => {
   try {
     const uid = req.user.id;
-    const [f, c, u, byType, byMonth, top5mfr] = await Promise.all([
+    const [f, c, u, byType, byMonth, top5mfr, salesStats] = await Promise.all([
       stmts.countFirearms(uid),
       stmts.countCustomers(uid),
       stmts.getUserById(uid),
       all("SELECT type, COUNT(*)::int AS count FROM firearms WHERE user_id=$1 AND disposition_date IS NULL GROUP BY type", [uid]),
       all("SELECT LEFT(acquisition_date,7) AS month, COUNT(*)::int AS count FROM firearms WHERE user_id=$1 AND acquisition_date IS NOT NULL AND acquisition_date!='' GROUP BY month ORDER BY month DESC LIMIT 12", [uid]),
       all("SELECT manufacturer, COUNT(*)::int AS count FROM firearms WHERE user_id=$1 GROUP BY manufacturer ORDER BY count DESC LIMIT 5", [uid]),
+      stmts.countSales(uid),
     ]);
     res.json({
       total_firearms:    f?.total        || 0,
@@ -214,6 +215,8 @@ app.get('/api/app/dashboard', requireAuth, async (req, res) => {
       by_type:           byType,
       by_month:          byMonth,
       top_manufacturers: top5mfr,
+      total_sales:       salesStats?.total   || 0,
+      total_revenue:     salesStats?.revenue || 0,
     });
   } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
@@ -276,6 +279,12 @@ app.post('/api/app/firearms', requireAuth, async (req, res) => {
     const { manufacturer, importer, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes, location_id } = req.body;
     if (!ok(manufacturer)||!ok(model)||!ok(serial_number)||!ok(caliber)||!ok(type)||!ok(acquisition_date)||!ok(acquisition_from))
       return res.status(400).json({ error: 'All required fields must be filled' });
+    // Free plan: max 50 total firearms
+    const u = await stmts.getUserById(req.user.id);
+    if (u && u.plan === 'free') {
+      const cnt = await stmts.countFirearms(req.user.id);
+      if (cnt && cnt.total >= 50) return res.status(403).json({ error: 'Free plan limit reached (50 firearms). Upgrade to add more.', limit: true });
+    }
     const r = await stmts.addFirearm({ user_id: req.user.id, location_id: location_id || null, manufacturer, importer: importer || null, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes: notes || null });
     audit(req, 'firearms', r.id, 'ADD', null, { manufacturer, model, serial_number, caliber, type, acquisition_date });
     res.status(201).json({ message: 'Firearm added', id: r.id });
@@ -352,6 +361,12 @@ app.post('/api/app/customers', requireAuth, async (req, res) => {
   try {
     const { first_name, last_name, email, phone, address, id_type, id_number, dob, notes } = req.body;
     if (!ok(first_name)||!ok(last_name)) return res.status(400).json({ error: 'Name required' });
+    // Free plan: max 50 customers
+    const u = await stmts.getUserById(req.user.id);
+    if (u && u.plan === 'free') {
+      const cnt = await stmts.countCustomers(req.user.id);
+      if (cnt && cnt.total >= 50) return res.status(403).json({ error: 'Free plan limit reached (50 customers). Upgrade to add more.', limit: true });
+    }
     const r = await stmts.addCustomer({ user_id: req.user.id, first_name, last_name, email: email || null, phone: phone || null, address: address || null, id_type: id_type || null, id_number: id_number || null, dob: dob || null, notes: notes || null });
     res.status(201).json({ message: 'Customer added', id: r.id });
   } catch(e) { res.status(500).json({ error: 'Server error' }); }
@@ -421,6 +436,37 @@ app.patch('/api/app/form4473/:id', requireAuth, async (req, res) => {
 // ── Audit log ─────────────────────────────────
 app.get('/api/app/audit-log', requireAuth, async (req, res) => {
   try { res.json({ log: await stmts.getAuditLog(req.user.id) }); }
+  catch(e) { res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Sales / POS ───────────────────────────────
+app.get('/api/app/sales', requireAuth, async (req, res) => {
+  try { res.json({ sales: await stmts.getSales(req.user.id) }); }
+  catch(e) { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.post('/api/app/sales', requireAuth, async (req, res) => {
+  try {
+    const { customer_id, firearm_id, sale_date, amount, payment_method, notes } = req.body;
+    if (!ok(sale_date)) return res.status(400).json({ error: 'Sale date required' });
+    if (isNaN(parseFloat(amount))) return res.status(400).json({ error: 'Valid amount required' });
+    const r = await stmts.addSale({ user_id: req.user.id, customer_id: customer_id || null, firearm_id: firearm_id || null, sale_date, amount: parseFloat(amount), payment_method: payment_method || 'cash', notes: notes || null });
+    audit(req, 'sales', r.id, 'ADD', null, { sale_date, amount });
+    res.status(201).json({ message: 'Sale recorded', id: r.id });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+app.patch('/api/app/sales/:id', requireAuth, async (req, res) => {
+  try {
+    const { customer_id, firearm_id, sale_date, amount, payment_method, notes } = req.body;
+    if (!ok(sale_date)) return res.status(400).json({ error: 'Sale date required' });
+    await stmts.updateSale({ customer_id: customer_id || null, firearm_id: firearm_id || null, sale_date, amount: parseFloat(amount) || 0, payment_method: payment_method || 'cash', notes: notes || null, id: req.params.id, user_id: req.user.id });
+    res.json({ message: 'Updated' });
+  } catch(e) { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.delete('/api/app/sales/:id', requireAuth, async (req, res) => {
+  try { await stmts.deleteSale(req.params.id, req.user.id); res.json({ message: 'Deleted' }); }
   catch(e) { res.status(500).json({ error: 'Server error' }); }
 });
 

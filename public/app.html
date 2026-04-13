@@ -285,8 +285,12 @@
   <div class="nav-item active" id="nav-dashboard"  onclick="showPage('dashboard')">📊 Dashboard</div>
 
   <div class="nav-section">Records</div>
+  <div class="nav-item" id="nav-inventory" onclick="showPage('inventory')">📦 Inventory</div>
   <div class="nav-item" id="nav-adbook"    onclick="showPage('adbook')">📒 A&amp;D Book</div>
   <div class="nav-item" id="nav-customers" onclick="showPage('customers')">👥 Customers</div>
+
+  <div class="nav-section">Sales</div>
+  <div class="nav-item" id="nav-pos"       onclick="showPage('pos')">💰 POS / Sales</div>
 
   <div class="nav-section">Compliance</div>
   <div class="nav-item" id="nav-form4473"  onclick="showPage('form4473')">📋 Form 4473</div>
@@ -382,6 +386,41 @@
         <thead><tr><th>Log #</th><th>Manufacturer</th><th>Model</th><th>Serial</th><th>Type</th><th>Acquired</th><th>Status</th></tr></thead>
         <tbody id="recent-tbody"><tr><td colspan="7"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- INVENTORY -->
+  <div class="page" id="page-inventory">
+    <div class="page-header">
+      <div>
+        <h2>Inventory</h2>
+        <p>Firearms currently in stock — not yet transferred</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn--ghost btn--sm" onclick="exportInventoryCSV()">⬇ Export CSV</button>
+        <button class="btn btn--red btn--sm"   onclick="openAddFirearmModal()">+ Add Firearm</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <h3 id="inventory-count">In Stock</h3>
+        <div class="toolbar-right">
+          <select class="search-input" style="width:140px" id="inv-filter-type" onchange="renderInventory()">
+            <option value="">All Types</option>
+            <option>Pistol</option><option>Revolver</option><option>Rifle</option>
+            <option>Shotgun</option><option>Receiver/Frame</option><option>Other</option>
+          </select>
+          <input class="search-input" placeholder="Search…" id="inv-search" oninput="renderInventory()" />
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr><th>Log #</th><th>Manufacturer</th><th>Model</th><th>Serial #</th><th>Caliber</th><th>Type</th><th>Acquired</th><th>From</th><th>Location</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="inventory-tbody"><tr><td colspan="10"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -591,6 +630,53 @@
         <table>
           <thead><tr><th>Time</th><th>Action</th><th>Table</th><th>Record #</th><th>Details</th></tr></thead>
           <tbody id="audit-tbody"><tr><td colspan="5"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- POS / SALES -->
+  <div class="page" id="page-pos">
+    <div class="page-header">
+      <div>
+        <h2>POS / Sales</h2>
+        <p>Record firearm sales and track revenue</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn--ghost btn--sm" onclick="exportSalesCSV()">⬇ Export CSV</button>
+        <button class="btn btn--red btn--sm"   onclick="openAddSaleModal()">+ New Sale</button>
+      </div>
+    </div>
+
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+      <div class="stat-card">
+        <div class="stat-card__label">Total Sales</div>
+        <div class="stat-card__value" id="pos-stat-count">—</div>
+        <div class="stat-card__sub">transactions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Total Revenue</div>
+        <div class="stat-card__value" id="pos-stat-revenue">—</div>
+        <div class="stat-card__sub">all time</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Avg Sale</div>
+        <div class="stat-card__value" id="pos-stat-avg">—</div>
+        <div class="stat-card__sub">per transaction</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <h3 id="pos-count">Sales</h3>
+        <input class="search-input" placeholder="Search customer, firearm…" id="pos-search" oninput="renderSales()" />
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Date</th><th>Customer</th><th>Firearm</th><th>Amount</th><th>Payment</th><th>Notes</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="pos-tbody"><tr><td colspan="8"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
         </table>
       </div>
     </div>
@@ -877,6 +963,71 @@
   </div>
 </div>
 
+<!-- ADD / EDIT SALE MODAL -->
+<div class="modal-overlay" id="saleModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3 id="saleModalTitle">Record Sale</h3>
+      <button class="modal-close" onclick="closeSaleModal()">×</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Sale Date <span class="req">*</span></label>
+        <input type="date" id="sm-date" />
+      </div>
+      <div class="form-group">
+        <label>Amount ($) <span class="req">*</span></label>
+        <input type="number" id="sm-amount" placeholder="0.00" min="0" step="0.01" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Customer</label>
+      <select id="sm-customer">
+        <option value="">— Walk-in / no customer —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Firearm (A&amp;D Record)</label>
+      <select id="sm-firearm">
+        <option value="">— No firearm linked —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Payment Method</label>
+      <select id="sm-payment">
+        <option value="cash">Cash</option>
+        <option value="card">Credit / Debit Card</option>
+        <option value="check">Check</option>
+        <option value="transfer">Bank Transfer</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <input type="text" id="sm-notes" placeholder="Optional notes…" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn--ghost" onclick="closeSaleModal()">Cancel</button>
+      <button class="btn btn--red" id="saleSubmitBtn" onclick="submitSale()">Save Sale</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPGRADE MODAL -->
+<div class="modal-overlay" id="upgradeModal">
+  <div class="modal" style="max-width:440px;text-align:center">
+    <div style="font-size:48px;margin-bottom:16px">🚀</div>
+    <h3 style="font-size:20px;font-weight:800;color:var(--white);margin-bottom:8px">Free Plan Limit Reached</h3>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:22px" id="upgradeLimitMsg">You've reached the free plan limit. Upgrade to unlock unlimited records.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+      <button class="btn btn--ghost" onclick="toast('Email billing@gunvault.com to upgrade','success');closeUpgradeModal()">Starter — $49/mo · 500 records</button>
+      <button class="btn btn--red"   onclick="toast('Email billing@gunvault.com to upgrade','success');closeUpgradeModal()">Pro — $99/mo · Unlimited ⭐</button>
+      <button class="btn btn--ghost" onclick="toast('Email billing@gunvault.com to upgrade','success');closeUpgradeModal()">Enterprise — $149/mo · Multi-location</button>
+    </div>
+    <button class="btn btn--ghost btn--sm" onclick="closeUpgradeModal()">Maybe later</button>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
@@ -900,6 +1051,8 @@ var chartMfr = null;
 var chartByMonth = null;
 var importParsedRows = [];
 var searchDebounce = null;
+var allSales = [];
+var editingSaleId = null;
 
 if (!TOKEN) { window.location.href = '/'; }
 
@@ -924,7 +1077,7 @@ async function init() {
     var h = new Date().getHours();
     var g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
     document.getElementById('dashGreeting').textContent = g + ', ' + currentUser.name.split(' ')[0] + ' 👋';
-    await Promise.all([loadDashboard(), loadFirearms(), loadCustomers()]);
+    await Promise.all([loadDashboard(), loadFirearms(), loadCustomers(), loadSales()]);
   } catch(e) {
     localStorage.removeItem('gv_token');
     window.location.href = '/';
@@ -950,11 +1103,13 @@ function showPage(name) {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebarOverlay').classList.remove('open');
   if (name === 'adbook')    renderFirearms();
+  if (name === 'inventory') renderInventory();
   if (name === 'customers') renderCustomers();
   if (name === 'settings')  { prefillSettings(); loadLocations(); }
   if (name === 'reports')   loadReports();
   if (name === 'auditlog')  loadAuditLog();
   if (name === 'form4473')  { loadForms4473(); populate4473Dropdowns(); }
+  if (name === 'pos')       { renderSales(); updatePosStats(); }
 }
 
 function toggleSidebar() {
@@ -1027,6 +1182,7 @@ async function loadFirearms() {
     allFirearms = data.firearms || [];
     renderFirearms();
     renderRecentFirearms();
+    renderInventory();
   } catch(e) {}
 }
 
@@ -1145,7 +1301,10 @@ async function submitFirearm() {
     closeFirearmModal();
     loadFirearms();
     loadDashboard();
-  } catch(e) { toast(e.message, 'error'); }
+  } catch(e) {
+    if (e.message && e.message.includes('limit')) { closeFirearmModal(); showUpgradeModal(e.message); }
+    else toast(e.message, 'error');
+  }
 }
 
 // ── Dispose ──
@@ -1356,7 +1515,10 @@ async function submitCustomer() {
     closeCustomerModal();
     loadCustomers();
     loadDashboard();
-  } catch(e) { toast(e.message, 'error'); }
+  } catch(e) {
+    if (e.message && e.message.includes('limit')) { closeCustomerModal(); showUpgradeModal(e.message); }
+    else toast(e.message, 'error');
+  }
 }
 
 async function deleteCustomer(id) {
@@ -2006,12 +2168,220 @@ function closeSearchPanel() {
   document.getElementById('globalSearchInput').value = '';
 }
 
+// ── Inventory ────────────────────────────────
+function renderInventory() {
+  var typeF = (document.getElementById('inv-filter-type') || {}).value || '';
+  var q     = ((document.getElementById('inv-search') || {}).value || '').toLowerCase();
+  var list  = allFirearms.filter(function(f) {
+    if (f.disposition_date) return false;
+    if (typeF && f.type !== typeF) return false;
+    if (q && !(f.manufacturer + f.model + f.serial_number + f.caliber + (f.acquisition_from||'')).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  var el = document.getElementById('inventory-count');
+  if (el) el.textContent = 'In Stock (' + list.length + ')';
+  var tbody = document.getElementById('inventory-tbody');
+  if (!tbody) return;
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📦</div><p>' +
+      (allFirearms.filter(function(f){return !f.disposition_date;}).length === 0 ? 'No firearms in stock.' : 'No firearms match your filter.') +
+      '</p><button class="btn btn--red btn--sm" onclick="openAddFirearmModal()">+ Add Firearm</button></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(function(f) {
+    return '<tr>' +
+      '<td style="color:var(--dim);font-size:11px">' + f.id + '</td>' +
+      '<td style="color:var(--white);font-weight:600">' + esc(f.manufacturer) + '</td>' +
+      '<td>' + esc(f.model) + '</td>' +
+      '<td class="td-mono">' + esc(f.serial_number) + '</td>' +
+      '<td>' + esc(f.caliber) + '</td>' +
+      '<td>' + esc(f.type) + '</td>' +
+      '<td style="color:var(--dim);white-space:nowrap">' + fmtDate(f.acquisition_date) + '</td>' +
+      '<td>' + esc(f.acquisition_from) + '</td>' +
+      '<td style="color:var(--dim)">' + esc(f.location_name || '—') + '</td>' +
+      '<td style="white-space:nowrap">' +
+        '<button class="tbl-btn tbl-btn--edit" onclick="openEditFirearmModal(' + f.id + ')">Edit</button>&nbsp;' +
+        '<button class="tbl-btn tbl-btn--dispose" onclick="openDisposeModal(' + f.id + ')">Transfer</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function exportInventoryCSV() {
+  var list = allFirearms.filter(function(f){ return !f.disposition_date; });
+  var cols = ['id','manufacturer','importer','model','serial_number','caliber','type','acquisition_date','acquisition_from','location_name','notes'];
+  var csv = [cols.join(',')].concat(list.map(function(f){
+    return cols.map(function(c){ return '"' + (f[c]||'').toString().replace(/"/g,'""') + '"'; }).join(',');
+  })).join('\n');
+  downloadCSV('gunvault_inventory.csv', csv);
+}
+
+// ── Sales / POS ──────────────────────────────
+async function loadSales() {
+  try {
+    var data = await api('GET', '/api/app/sales');
+    allSales = data.sales || [];
+    renderSales();
+    updatePosStats();
+  } catch(e) {}
+}
+
+function updatePosStats() {
+  var total = allSales.length;
+  var revenue = allSales.reduce(function(s, x){ return s + parseFloat(x.amount || 0); }, 0);
+  var avg = total ? revenue / total : 0;
+  var el1 = document.getElementById('pos-stat-count');
+  var el2 = document.getElementById('pos-stat-revenue');
+  var el3 = document.getElementById('pos-stat-avg');
+  if (el1) el1.textContent = total;
+  if (el2) el2.textContent = '$' + revenue.toFixed(2);
+  if (el3) el3.textContent = total ? '$' + avg.toFixed(2) : '—';
+}
+
+function renderSales() {
+  var q = ((document.getElementById('pos-search') || {}).value || '').toLowerCase();
+  var list = allSales.filter(function(s) {
+    if (!q) return true;
+    var name = ((s.first_name||'') + ' ' + (s.last_name||'')).trim();
+    var gun  = ((s.manufacturer||'') + ' ' + (s.model||'') + ' ' + (s.serial_number||'')).trim();
+    return (name + gun + (s.notes||'') + (s.payment_method||'')).toLowerCase().includes(q);
+  });
+  var el = document.getElementById('pos-count');
+  if (el) el.textContent = 'Sales (' + list.length + ')';
+  var tbody = document.getElementById('pos-tbody');
+  if (!tbody) return;
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">💰</div><p>' +
+      (allSales.length ? 'No sales match your search.' : 'No sales recorded yet.') + '</p>' +
+      (!allSales.length ? '<button class="btn btn--red btn--sm" onclick="openAddSaleModal()">+ New Sale</button>' : '') +
+      '</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(function(s) {
+    var custName = s.first_name ? esc(s.first_name + ' ' + s.last_name) : '<span style="color:var(--dim)">Walk-in</span>';
+    var gunName  = s.manufacturer ? esc(s.manufacturer + ' ' + s.model) : '<span style="color:var(--dim)">—</span>';
+    var pmLabels = { cash:'Cash', card:'Card', check:'Check', transfer:'Transfer', other:'Other' };
+    return '<tr>' +
+      '<td style="color:var(--dim);font-size:11px">' + s.id + '</td>' +
+      '<td style="color:var(--dim);white-space:nowrap">' + fmtDate(s.sale_date) + '</td>' +
+      '<td>' + custName + '</td>' +
+      '<td>' + gunName + '</td>' +
+      '<td style="color:var(--green);font-weight:700">$' + parseFloat(s.amount||0).toFixed(2) + '</td>' +
+      '<td>' + esc(pmLabels[s.payment_method] || s.payment_method || '—') + '</td>' +
+      '<td style="color:var(--dim)">' + esc(s.notes || '—') + '</td>' +
+      '<td style="white-space:nowrap">' +
+        '<button class="tbl-btn tbl-btn--edit" onclick="openEditSaleModal(' + s.id + ')">Edit</button>&nbsp;' +
+        '<button class="tbl-btn tbl-btn--del" onclick="deleteSale(' + s.id + ')">Delete</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function openAddSaleModal() {
+  editingSaleId = null;
+  document.getElementById('saleModalTitle').textContent = 'Record Sale';
+  document.getElementById('saleSubmitBtn').textContent  = 'Save Sale';
+  document.getElementById('sm-date').value    = todayISO();
+  document.getElementById('sm-amount').value  = '';
+  document.getElementById('sm-notes').value   = '';
+  document.getElementById('sm-payment').value = 'cash';
+  var csel = document.getElementById('sm-customer');
+  csel.innerHTML = '<option value="">— Walk-in / no customer —</option>';
+  allCustomers.forEach(function(c) {
+    var o = document.createElement('option');
+    o.value = c.id; o.textContent = c.first_name + ' ' + c.last_name;
+    csel.appendChild(o);
+  });
+  var fsel = document.getElementById('sm-firearm');
+  fsel.innerHTML = '<option value="">— No firearm linked —</option>';
+  allFirearms.filter(function(f){ return !f.disposition_date; }).forEach(function(f) {
+    var o = document.createElement('option');
+    o.value = f.id; o.textContent = f.manufacturer + ' ' + f.model + ' — S/N: ' + f.serial_number;
+    fsel.appendChild(o);
+  });
+  document.getElementById('saleModal').classList.add('open');
+}
+
+function openEditSaleModal(id) {
+  var s = allSales.find(function(x){ return x.id === id; });
+  if (!s) return;
+  editingSaleId = id;
+  openAddSaleModal();
+  document.getElementById('saleModalTitle').textContent = 'Edit Sale';
+  document.getElementById('saleSubmitBtn').textContent  = 'Save Changes';
+  document.getElementById('sm-date').value    = s.sale_date    || '';
+  document.getElementById('sm-amount').value  = s.amount       || '';
+  document.getElementById('sm-notes').value   = s.notes        || '';
+  document.getElementById('sm-payment').value = s.payment_method || 'cash';
+  if (s.customer_id) document.getElementById('sm-customer').value = s.customer_id;
+  if (s.firearm_id)  document.getElementById('sm-firearm').value  = s.firearm_id;
+}
+
+function closeSaleModal() {
+  document.getElementById('saleModal').classList.remove('open');
+  editingSaleId = null;
+}
+
+async function submitSale() {
+  var date   = document.getElementById('sm-date').value;
+  var amount = document.getElementById('sm-amount').value;
+  if (!date)   { toast('Sale date is required', 'error'); return; }
+  if (!amount || isNaN(parseFloat(amount))) { toast('Valid amount is required', 'error'); return; }
+  var body = {
+    sale_date:      date,
+    amount:         parseFloat(amount),
+    customer_id:    document.getElementById('sm-customer').value || null,
+    firearm_id:     document.getElementById('sm-firearm').value  || null,
+    payment_method: document.getElementById('sm-payment').value  || 'cash',
+    notes:          document.getElementById('sm-notes').value.trim() || null
+  };
+  try {
+    if (editingSaleId) {
+      await api('PATCH', '/api/app/sales/' + editingSaleId, body);
+      toast('Sale updated');
+    } else {
+      await api('POST', '/api/app/sales', body);
+      toast('Sale recorded');
+    }
+    closeSaleModal();
+    loadSales();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function deleteSale(id) {
+  if (!confirm('Delete this sale record?')) return;
+  try {
+    await api('DELETE', '/api/app/sales/' + id);
+    toast('Sale deleted');
+    loadSales();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function exportSalesCSV() {
+  var cols = ['id','sale_date','first_name','last_name','manufacturer','model','serial_number','amount','payment_method','notes'];
+  var csv = [cols.join(',')].concat(allSales.map(function(s){
+    return cols.map(function(c){ return '"' + (s[c]||'').toString().replace(/"/g,'""') + '"'; }).join(',');
+  })).join('\n');
+  downloadCSV('gunvault_sales.csv', csv);
+}
+
+// ── Upgrade modal ─────────────────────────────
+function showUpgradeModal(msg) {
+  var el = document.getElementById('upgradeLimitMsg');
+  if (el && msg) el.textContent = msg;
+  document.getElementById('upgradeModal').classList.add('open');
+}
+
+function closeUpgradeModal() {
+  document.getElementById('upgradeModal').classList.remove('open');
+}
+
 // ── Close modals on overlay click ──────────────
 document.querySelectorAll('.modal-overlay').forEach(function(o) {
   o.addEventListener('click', function(e) {
     if (e.target === o) {
       o.classList.remove('open');
-      editingFirearmId = editingCustomerId = disposingFirearmId = editingLocationId = null;
+      editingFirearmId = editingCustomerId = disposingFirearmId = editingLocationId = editingSaleId = null;
     }
   });
 });

@@ -212,6 +212,20 @@ async function initSchema() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+
+  await q(`
+    CREATE TABLE IF NOT EXISTS sales (
+      id          SERIAL PRIMARY KEY,
+      user_id     INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      customer_id INTEGER     REFERENCES customers(id),
+      firearm_id  INTEGER     REFERENCES firearms(id),
+      sale_date   TEXT        NOT NULL,
+      amount      NUMERIC(10,2) NOT NULL DEFAULT 0,
+      payment_method TEXT     DEFAULT 'cash',
+      notes       TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
 }
 
 // Run schema init once at startup (idempotent)
@@ -420,6 +434,33 @@ const stmts = {
 
   getAllWaitlist: () =>
     all('SELECT * FROM waitlist ORDER BY created_at DESC'),
+
+  // ── Sales ─────────────────────────────────
+  addSale: ({ user_id, customer_id, firearm_id, sale_date, amount, payment_method, notes }) =>
+    one('INSERT INTO sales (user_id,customer_id,firearm_id,sale_date,amount,payment_method,notes) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
+      [user_id, customer_id || null, firearm_id || null, sale_date, amount || 0, payment_method || 'cash', notes || null]),
+
+  getSales: (user_id) =>
+    all(`SELECT s.*,
+         c.first_name, c.last_name,
+         f.manufacturer, f.model, f.serial_number
+         FROM sales s
+         LEFT JOIN customers c ON s.customer_id = c.id
+         LEFT JOIN firearms  f ON s.firearm_id  = f.id
+         WHERE s.user_id=$1 ORDER BY s.sale_date DESC, s.created_at DESC`, [user_id]),
+
+  getSale: (id, user_id) =>
+    one('SELECT * FROM sales WHERE id=$1 AND user_id=$2', [id, user_id]),
+
+  updateSale: ({ customer_id, firearm_id, sale_date, amount, payment_method, notes, id, user_id }) =>
+    run('UPDATE sales SET customer_id=$1,firearm_id=$2,sale_date=$3,amount=$4,payment_method=$5,notes=$6 WHERE id=$7 AND user_id=$8',
+      [customer_id || null, firearm_id || null, sale_date, amount || 0, payment_method || 'cash', notes || null, id, user_id]),
+
+  deleteSale: (id, user_id) =>
+    run('DELETE FROM sales WHERE id=$1 AND user_id=$2', [id, user_id]),
+
+  countSales: (user_id) =>
+    one('SELECT COUNT(*)::int AS total, COALESCE(SUM(amount),0)::numeric AS revenue FROM sales WHERE user_id=$1', [user_id]),
 };
 
 // ─────────────────────────────────────────────
