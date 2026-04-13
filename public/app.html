@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GunVault — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f172a; --surface: #1e293b; --border: #334155;
+      --muted: #64748b; --dim: #475569; --text: #e2e8f0; --white: #fff;
+      --red: #c41e3a; --red-h: #a8172f;
+      --green: #4ade80; --cyan: #22d3ee; --yellow: #fbbf24;
+      --sidebar-w: 228px;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; padding: 20px 14px; z-index: 50;
+      transition: transform .25s ease;
+    }
+    .sidebar-logo { font-size: 17px; font-weight: 800; color: var(--white); margin-bottom: 28px; padding: 0 8px; display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 30px; height: 30px; background: var(--red); border-radius: 7px; display: grid; place-items: center; font-size: 15px; flex-shrink: 0; }
+    .nav-section { font-size: 10px; font-weight: 700; color: var(--dim); letter-spacing: .08em; text-transform: uppercase; padding: 0 8px; margin: 14px 0 5px; }
+    .nav-item { padding: 9px 12px; border-radius: 8px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: #94a3b8; transition: all .15s; display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+    .nav-item:hover { background: var(--border); color: var(--white); }
+    .nav-item.active { background: rgba(196,30,58,.15); color: #fb7185; }
+    .badge-soon { margin-left: auto; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(251,191,36,.12); color: #fbbf24; letter-spacing: .04em; }
+    .sidebar-footer { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border); }
+    .user-card { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; margin-bottom: 10px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--red); display: grid; place-items: center; font-size: 14px; font-weight: 700; color: var(--white); flex-shrink: 0; }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+    .logout-btn { width: 100%; padding: 8px; background: var(--border); border: none; color: #94a3b8; border-radius: 6px; font-size: 13px; font-family: inherit; cursor: pointer; transition: all .15s; text-align: center; }
+    .logout-btn:hover { background: var(--dim); color: var(--white); }
+
+    /* ── Mobile header ── */
+    .mobile-header { display: none; position: fixed; top: 0; left: 0; right: 0; height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); align-items: center; justify-content: space-between; padding: 0 16px; z-index: 60; }
+    .mobile-logo { font-size: 16px; font-weight: 800; color: var(--white); display: flex; align-items: center; gap: 8px; }
+    .hamburger { background: none; border: none; color: var(--text); cursor: pointer; padding: 4px; display: flex; flex-direction: column; gap: 5px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: currentColor; border-radius: 2px; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 40; }
+
+    /* ── Main ── */
+    .main { margin-left: var(--sidebar-w); min-height: 100vh; }
+    .page { display: none; padding: 32px; }
+    .page.active { display: block; }
+    .page-header { margin-bottom: 24px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .page-header h2 { font-size: 22px; font-weight: 800; color: var(--white); }
+    .page-header p  { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 18px; border-radius: 8px; border: none; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
+    .btn--red { background: var(--red); color: var(--white); }
+    .btn--red:hover { background: var(--red-h); }
+    .btn--ghost { background: transparent; color: #94a3b8; border: 1px solid var(--border); }
+    .btn--ghost:hover { color: var(--white); border-color: var(--dim); }
+    .btn--sm { padding: 7px 14px; font-size: 12.5px; border-radius: 7px; }
+
+    /* ── Stats grid ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+    .stat-card__label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 6px; }
+    .stat-card__value { font-size: 36px; font-weight: 900; color: var(--white); letter-spacing: -1px; }
+    .stat-card__sub   { font-size: 11px; color: var(--dim); margin-top: 3px; }
+
+    /* ── Quick actions ── */
+    .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+
+    /* ── Onboarding ── */
+    .onboarding-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin-bottom: 24px; }
+    .onboarding-card h3 { font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+    .onboarding-card > p { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+    .progress-bar { height: 6px; background: var(--border); border-radius: 100px; margin-bottom: 16px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--green); border-radius: 100px; transition: width .4s ease; }
+    .onboarding-steps { display: flex; flex-direction: column; gap: 10px; }
+    .onboard-step { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+    .onboard-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: grid; place-items: center; flex-shrink: 0; transition: all .2s; font-size: 11px; font-weight: 700; }
+    .onboard-check.done { background: var(--green); border-color: var(--green); color: #052e16; }
+    .onboard-label { font-size: 13px; color: var(--text); }
+    .onboard-label.done { text-decoration: line-through; color: var(--muted); }
+
+    /* ── Table wrap ── */
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .table-toolbar { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .table-toolbar h3 { font-size: 14px; font-weight: 700; color: var(--white); white-space: nowrap; }
+    .toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .search-input { padding: 7px 13px; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; width: 200px; transition: border-color .2s; }
+    .search-input:focus { border-color: var(--red); }
+    .search-input::placeholder { color: var(--dim); }
+    .filter-tabs { display: flex; gap: 4px; }
+    .filter-tab { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+    .filter-tab:hover { color: var(--white); }
+    .filter-tab.active { background: var(--red); border-color: var(--red); color: var(--white); }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: var(--bg); }
+    th { padding: 10px 14px; text-align: left; font-size: 10.5px; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+    td { padding: 11px 14px; font-size: 12.5px; color: #cbd5e1; border-bottom: 1px solid #1e3050; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.02); }
+    .td-mono { font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: .04em; }
+    .empty-state { text-align: center; padding: 48px 24px; }
+    .empty-icon { font-size: 36px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+
+    /* ── Badges ── */
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 100px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+    .badge--green  { background: rgba(34,197,94,.12); color: var(--green); }
+    .badge--gray   { background: rgba(100,116,139,.12); color: #94a3b8; }
+
+    /* ── Table action buttons ── */
+    .tbl-btn { padding: 4px 9px; border-radius: 5px; border: none; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .tbl-btn--edit    { background: rgba(100,116,139,.12); color: #94a3b8; }
+    .tbl-btn--edit:hover { background: rgba(100,116,139,.25); color: var(--white); }
+    .tbl-btn--dispose { background: rgba(251,191,36,.12); color: var(--yellow); }
+    .tbl-btn--dispose:hover { background: rgba(251,191,36,.22); }
+    .tbl-btn--del  { background: rgba(239,68,68,.1); color: #f87171; }
+    .tbl-btn--del:hover { background: rgba(239,68,68,.22); }
+
+    /* ── Modal ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 200; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+    .modal-header h3 { font-size: 18px; font-weight: 700; color: var(--white); }
+    .modal-close { background: var(--border); border: none; color: #94a3b8; width: 30px; height: 30px; border-radius: 6px; font-size: 18px; cursor: pointer; display: grid; place-items: center; transition: all .15s; }
+    .modal-close:hover { background: var(--dim); color: var(--white); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 5px; }
+    .form-group label .req { color: #f87171; margin-left: 2px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 13px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13.5px; font-family: inherit; outline: none; transition: border-color .2s; }
+    .form-group input:focus, .form-group select:focus { border-color: var(--red); }
+    .form-group input::placeholder { color: var(--dim); }
+    .form-group select option { background: var(--surface); }
+    .form-hint { font-size: 11px; color: var(--dim); margin-top: 4px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-actions .btn { flex: 1; }
+
+    /* ── Settings ── */
+    .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .settings-section h3 { font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+    .settings-section .desc { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+    .settings-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .settings-field { margin-bottom: 16px; }
+    .settings-field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 5px; }
+    .settings-field input { width: 100%; padding: 10px 13px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13.5px; font-family: inherit; outline: none; transition: border-color .2s; }
+    .settings-field input:focus { border-color: var(--red); }
+    .settings-field input::placeholder { color: var(--dim); }
+    .settings-field input:disabled { opacity: .45; cursor: not-allowed; }
+    .danger-zone { border-color: rgba(239,68,68,.3); }
+    .danger-zone h3 { color: #f87171; }
+
+    /* ── Coming soon ── */
+    .coming-soon-wrap { display: flex; align-items: center; justify-content: center; min-height: 60vh; }
+    .coming-soon-box { text-align: center; max-width: 380px; }
+    .coming-soon-box .cs-icon { font-size: 52px; margin-bottom: 16px; }
+    .coming-soon-box h3 { font-size: 22px; font-weight: 800; color: var(--white); margin-bottom: 8px; }
+    .coming-soon-box p  { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+
+    /* ── Charts (Reports) ── */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .chart-card h4 { font-size: 13px; font-weight: 700; color: var(--white); margin-bottom: 16px; }
+    .chart-card canvas { max-height: 220px; }
+    .chart-full { grid-column: 1 / -1; }
+    @media(max-width:768px){ .charts-grid{grid-template-columns:1fr;} }
+
+    /* ── Global search ── */
+    .search-bar-wrap { padding: 0 8px; margin-bottom: 10px; position: relative; }
+    .global-search-input { width:100%;padding:8px 12px 8px 32px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s; }
+    .global-search-input:focus{border-color:var(--red);}
+    .global-search-input::placeholder{color:var(--dim);}
+    .search-icon-prefix{position:absolute;left:20px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none;color:var(--dim);}
+    .search-results-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:300;display:none;}
+    .search-results-overlay.open{display:block;}
+    .search-results-panel{position:absolute;left:var(--sidebar-w);top:0;width:420px;max-height:100vh;overflow-y:auto;background:var(--surface);border-right:1px solid var(--border);border-left:1px solid var(--border);box-shadow:4px 0 24px rgba(0,0,0,.5);}
+    .search-results-header{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .search-results-header span{font-size:13px;font-weight:700;color:var(--white);}
+    .search-section-title{font-size:10px;font-weight:700;color:var(--dim);letter-spacing:.07em;text-transform:uppercase;padding:12px 18px 4px;}
+    .search-result-item{padding:10px 18px;cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:10px;}
+    .search-result-item:hover{background:rgba(255,255,255,.04);}
+    .search-result-icon{font-size:16px;flex-shrink:0;}
+    .search-result-name{font-size:13px;color:var(--white);font-weight:600;}
+    .search-result-sub{font-size:11px;color:var(--muted);}
+    .search-no-results{text-align:center;padding:32px;color:var(--muted);font-size:13px;}
+    @media(max-width:768px){.search-results-panel{left:0;width:100%;max-height:80vh;top:56px;}}
+
+    /* ── Audit Log ── */
+    .audit-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+    .audit-ADD{background:rgba(34,197,94,.12);color:#4ade80;}
+    .audit-UPDATE{background:rgba(34,191,238,.12);color:#22d3ee;}
+    .audit-DISPOSE{background:rgba(251,191,36,.12);color:#fbbf24;}
+    .audit-DELETE{background:rgba(239,68,68,.12);color:#f87171;}
+
+    /* ── Import ── */
+    .import-drop{border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:14px;}
+    .import-drop:hover,.import-drop.drag{border-color:var(--red);}
+    .import-drop p{font-size:13px;color:var(--muted);margin-top:8px;}
+    .import-preview{background:var(--bg);border-radius:8px;padding:12px;margin-bottom:14px;max-height:200px;overflow-y:auto;display:none;}
+    .import-preview table{width:100%;font-size:11px;border-collapse:collapse;}
+    .import-preview th,.import-preview td{padding:4px 8px;border-bottom:1px solid var(--border);text-align:left;}
+    .import-preview th{color:var(--muted);font-weight:700;}
+    .import-preview td{color:var(--text);}
+    .import-result{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:10px;display:none;}
+    .import-result.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#4ade80;}
+    .import-result.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;}
+
+    /* ── Locations ── */
+    .location-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+    .location-card__name{font-size:14px;font-weight:700;color:var(--white);}
+    .location-card__address{font-size:12px;color:var(--muted);}
+    .badge--primary{background:rgba(196,30,58,.15);color:#fb7185;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;}
+
+    /* ── Form 4473 ── */
+    .f4473-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;}
+    .f4473-section h4{font-size:13px;font-weight:700;color:var(--white);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+    .f4473-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+    .f4473-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .f4473-full{grid-column:1/-1;}
+    .q-row{display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid rgba(51,65,85,.5);}
+    .q-row:last-child{border-bottom:none;}
+    .q-text{font-size:12px;color:#94a3b8;flex:1;line-height:1.5;}
+    .q-ans{display:flex;gap:10px;flex-shrink:0;margin-top:2px;}
+    .q-ans label{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text);cursor:pointer;white-space:nowrap;}
+    .f4473-status-bar{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+    .f4473-status-bar span{font-size:13px;color:var(--muted);}
+    .f4473-status-bar strong{color:var(--white);}
+    @media(max-width:768px){.f4473-grid{grid-template-columns:1fr 1fr;}.f4473-grid-2{grid-template-columns:1fr;}}
+
+    /* ── Toast ── */
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { padding: 12px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; font-size: 13px; color: var(--text); box-shadow: 0 8px 24px rgba(0,0,0,.4); animation: slideUp .25s ease; display: flex; align-items: center; gap: 10px; }
+    .toast--success { border-color: rgba(34,197,94,.4); }
+    .toast--error   { border-color: rgba(239,68,68,.4); }
+    @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); box-shadow: 4px 0 28px rgba(0,0,0,.5); }
+      .sidebar-overlay.open { display: block; }
+      .mobile-header { display: flex; }
+      .main { margin-left: 0; padding-top: 56px; }
+      .page { padding: 20px 16px; }
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .form-row, .settings-form-row { grid-template-columns: 1fr; }
+      .modal { padding: 20px; }
+      .table-toolbar { flex-direction: column; align-items: flex-start; }
+      .search-input { width: 100%; }
+      .page-header { flex-direction: column; }
+    }
+    @media (max-width: 480px) {
+      .quick-actions { flex-direction: column; }
+      .quick-actions .btn { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- MOBILE HEADER -->
+<header class="mobile-header">
+  <div class="mobile-logo"><div class="logo-icon">🛡</div> GunVault</div>
+  <button class="hamburger" onclick="toggleSidebar()" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><div class="logo-icon">🛡</div> GunVault</div>
+
+  <div class="search-bar-wrap">
+    <span class="search-icon-prefix">🔍</span>
+    <input class="global-search-input" id="globalSearchInput" placeholder="Search everything…" oninput="onGlobalSearch(this.value)" autocomplete="off" />
+  </div>
+
+  <div class="nav-section">Main</div>
+  <div class="nav-item active" id="nav-dashboard"  onclick="showPage('dashboard')">📊 Dashboard</div>
+
+  <div class="nav-section">Records</div>
+  <div class="nav-item" id="nav-adbook"    onclick="showPage('adbook')">📒 A&amp;D Book</div>
+  <div class="nav-item" id="nav-customers" onclick="showPage('customers')">👥 Customers</div>
+
+  <div class="nav-section">Compliance</div>
+  <div class="nav-item" id="nav-form4473"  onclick="showPage('form4473')">📋 Form 4473</div>
+  <div class="nav-item" id="nav-reports"   onclick="showPage('reports')">📈 Reports</div>
+  <div class="nav-item" id="nav-auditlog"  onclick="showPage('auditlog')">🔎 Audit Log</div>
+
+  <div class="nav-section">Account</div>
+  <div class="nav-item" id="nav-settings"  onclick="showPage('settings')">⚙️ Settings</div>
+
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div>
+        <div class="user-name" id="userName">Loading…</div>
+        <div class="user-plan" id="userPlan">free plan</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="logout()">Sign Out</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <div>
+        <h2 id="dashGreeting">Good morning 👋</h2>
+        <p>Here's what's happening at your shop today</p>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card__label">In Inventory</div>
+        <div class="stat-card__value" id="stat-inventory">—</div>
+        <div class="stat-card__sub">firearms in stock</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Total A&amp;D</div>
+        <div class="stat-card__value" id="stat-total">—</div>
+        <div class="stat-card__sub">lifetime log entries</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Transferred</div>
+        <div class="stat-card__value" id="stat-transferred">—</div>
+        <div class="stat-card__sub">dispositions recorded</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Customers</div>
+        <div class="stat-card__value" id="stat-customers">—</div>
+        <div class="stat-card__sub">on file</div>
+      </div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="btn btn--red btn--sm" onclick="openAddFirearmModal()">+ Add Firearm</button>
+      <button class="btn btn--ghost btn--sm" onclick="showPage('customers');setTimeout(openAddCustomerModal,80)">+ Add Customer</button>
+      <button class="btn btn--ghost btn--sm" onclick="printATFReport()">🖨 Print ATF Report</button>
+    </div>
+
+    <div class="onboarding-card" id="onboardingCard">
+      <h3>Get started with GunVault</h3>
+      <p>Complete these steps to set up your digital bound book</p>
+      <div class="progress-bar"><div class="progress-fill" id="onboardProgress" style="width:0%"></div></div>
+      <div class="onboarding-steps">
+        <div class="onboard-step">
+          <div class="onboard-check done" id="oc1">✓</div>
+          <div class="onboard-label done">Create your account</div>
+        </div>
+        <div class="onboard-step" onclick="showPage('settings')">
+          <div class="onboard-check" id="oc2"></div>
+          <div class="onboard-label" id="ol2">Add your FFL number &amp; shop info</div>
+        </div>
+        <div class="onboard-step" onclick="openAddFirearmModal()">
+          <div class="onboard-check" id="oc3"></div>
+          <div class="onboard-label" id="ol3">Add your first firearm to the A&amp;D Book</div>
+        </div>
+        <div class="onboard-step" onclick="showPage('customers');setTimeout(openAddCustomerModal,80)">
+          <div class="onboard-check" id="oc4"></div>
+          <div class="onboard-label" id="ol4">Add your first customer record</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <h3>Recent A&amp;D Entries</h3>
+        <button class="btn btn--ghost btn--sm" onclick="showPage('adbook')">View all →</button>
+      </div>
+      <table>
+        <thead><tr><th>Log #</th><th>Manufacturer</th><th>Model</th><th>Serial</th><th>Type</th><th>Acquired</th><th>Status</th></tr></thead>
+        <tbody id="recent-tbody"><tr><td colspan="7"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- A&D BOOK -->
+  <div class="page" id="page-adbook">
+    <div class="page-header">
+      <div>
+        <h2>A&amp;D Book</h2>
+        <p>Acquisition &amp; Disposition Record — 27 CFR 478.125</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn--ghost btn--sm" onclick="printATFReport()">🖨 ATF Report</button>
+        <button class="btn btn--ghost btn--sm" onclick="exportFirearmsCSV()">⬇ Export CSV</button>
+        <button class="btn btn--ghost btn--sm" onclick="openImportModal()">⬆ Import CSV</button>
+        <button class="btn btn--red btn--sm"   onclick="openAddFirearmModal()">+ Add Entry</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <h3 id="adbook-count">A&amp;D Entries</h3>
+        <div class="toolbar-right">
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="setADFilter('all',this)">All</button>
+            <button class="filter-tab" onclick="setADFilter('stock',this)">In Stock</button>
+            <button class="filter-tab" onclick="setADFilter('transferred',this)">Transferred</button>
+          </div>
+          <input class="search-input" placeholder="Search serial, model…" id="adbook-search" oninput="renderFirearms()" />
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Log #</th><th>Manufacturer</th><th>Importer</th><th>Model</th>
+              <th>Serial #</th><th>Caliber</th><th>Type</th>
+              <th>Acq. Date</th><th>Acquired From</th>
+              <th>Disp. Date</th><th>Transferred To</th>
+              <th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adbook-tbody"><tr><td colspan="13"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div class="page" id="page-customers">
+    <div class="page-header">
+      <div>
+        <h2>Customers</h2>
+        <p>Buyer records for background checks &amp; 4473 filing</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn--ghost btn--sm" onclick="exportCustomersCSV()">⬇ CSV</button>
+        <button class="btn btn--red btn--sm"   onclick="openAddCustomerModal()">+ Add Customer</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <h3 id="customers-count">Customers</h3>
+        <input class="search-input" placeholder="Search by name or email…" oninput="filterCustomers(this.value)" />
+      </div>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>ID Type</th><th>DOB</th><th>Address</th><th>Added</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="customers-tbody"><tr><td colspan="9"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FORM 4473 -->
+  <div class="page" id="page-form4473">
+    <div class="page-header">
+      <div><h2>Form 4473</h2><p>ATF Firearms Transaction Record — digital filing</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn--ghost btn--sm" onclick="open4473New()">+ New Form</button>
+      </div>
+    </div>
+    <!-- List of saved forms -->
+    <div class="table-wrap" id="form4473List">
+      <div class="table-toolbar"><h3 id="f4473-count">Form 4473 Records</h3></div>
+      <table>
+        <thead><tr><th>#</th><th>Transferee</th><th>Firearm</th><th>Transaction Date</th><th>NICS Result</th><th>Actions</th></tr></thead>
+        <tbody id="f4473-tbody"><tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📋</div><p>No forms yet. Click "+ New Form" to create one.</p></div></td></tr></tbody>
+      </table>
+    </div>
+    <!-- The form itself (hidden by default) -->
+    <div id="form4473Editor" style="display:none">
+      <div class="f4473-status-bar">
+        <div><span>Creating new Form 4473 — </span><strong>Complete all sections</strong></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--ghost btn--sm" onclick="cancel4473()">Cancel</button>
+          <button class="btn btn--red btn--sm" onclick="submit4473()">Save Form</button>
+        </div>
+      </div>
+
+      <!-- Section A: Transferee -->
+      <div class="f4473-section">
+        <h4>Section A — Transferee (Buyer) Information</h4>
+        <div class="f4473-grid">
+          <div class="form-group"><label>Last Name <span class="req">*</span></label><input type="text" id="f-last" placeholder="Last name" /></div>
+          <div class="form-group"><label>First Name <span class="req">*</span></label><input type="text" id="f-first" placeholder="First name" /></div>
+          <div class="form-group"><label>Middle Name</label><input type="text" id="f-mid" placeholder="Middle name" /></div>
+          <div class="form-group f4473-full"><label>Current Residence Address <span class="req">*</span></label><input type="text" id="f-address" placeholder="Street, City, State, ZIP" /></div>
+          <div class="form-group"><label>Date of Birth <span class="req">*</span></label><input type="date" id="f-dob" /></div>
+          <div class="form-group"><label>Place of Birth</label><input type="text" id="f-pob" placeholder="City, State / Country" /></div>
+          <div class="form-group"><label>Height</label><input type="text" id="f-height" placeholder='5\' 11"' /></div>
+          <div class="form-group"><label>Weight (lbs)</label><input type="text" id="f-weight" placeholder="185" /></div>
+          <div class="form-group"><label>Sex</label><select id="f-sex"><option value="">Select…</option><option>Male</option><option>Female</option><option>Nonbinary</option></select></div>
+          <div class="form-group"><label>ID Type <span class="req">*</span></label><select id="f-idtype"><option value="">Select…</option><option>Driver's License</option><option>State ID</option><option>Passport</option><option>Military ID</option></select></div>
+          <div class="form-group"><label>ID Number <span class="req">*</span></label><input type="text" id="f-idnum" placeholder="ID number" /></div>
+          <div class="form-group"><label>ID Issued By (State)</label><input type="text" id="f-idstate" placeholder="CA, TX, NY…" /></div>
+        </div>
+        <div class="f4473-grid-2" style="margin-top:10px">
+          <div class="form-group"><label>Or link to existing customer</label>
+            <select id="f-customer-link" onchange="autoFill4473Customer()">
+              <option value="">— Select customer to auto-fill —</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Link to Firearm (A&amp;D Record)</label>
+            <select id="f-firearm-link">
+              <option value="">— Select firearm —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section B: Questions -->
+      <div class="f4473-section">
+        <h4>Section B — Eligibility Questions</h4>
+        <div class="q-row"><div class="q-text">21.a. Are you the actual transferee/buyer of the firearm(s)?</div><div class="q-ans"><label><input type="radio" name="q21a" value="yes"> Yes</label><label><input type="radio" name="q21a" value="no"> No</label></div></div>
+        <div class="q-row"><div class="q-text">21.b. Are you under indictment or information in any court for a felony?</div><div class="q-ans"><label><input type="radio" name="q21b" value="yes"> Yes</label><label><input type="radio" name="q21b" value="no"> No</label></div></div>
+        <div class="q-row"><div class="q-text">21.c. Have you ever been convicted in any court of a felony?</div><div class="q-ans"><label><input type="radio" name="q21c" value="yes"> Yes</label><label><input type="radio" name="q21c" value="no"> No</label></div></div>
+        <div class="q-row"><div class="q-text">21.d. Are you a fugitive from justice?</div><div class="q-ans"><label><input type="radio" name="q21d" value="yes"> Yes</label><label><input type="radio" name="q21d" value="no"> No</label></div></div>
+        <div class="q-row"><div class="q-text">21.e. Are you an unlawful user of, or addicted to, marijuana or any depressant, stimulant, narcotic drug, or any other controlled substance?</div><div class="q-ans"><label><input type="radio" name="q21e" value="yes"> Yes</label><label><input type="radio" name="q21e" value="no"> No</label></div></div>
+        <div class="q-row"><div class="q-text">21.f. Have you ever been adjudicated mentally defective or committed to a mental institution?</div><div class="q-ans"><label><input type="radio" name="q21f" value="yes"> Yes</label><label><input type="radio" name="q21f" value="no"> No</label></div></div>
+        <div class="q-row"><div class="q-text">21.g. Have you been discharged from the Armed Forces under dishonorable conditions?</div><div class="q-ans"><label><input type="radio" name="q21g" value="yes"> Yes</label><label><input type="radio" name="q21g" value="no"> No</label></div></div>
+        <div class="q-row"><div class="q-text">21.h. Are you subject to a court order restraining you from harassing, stalking, or threatening an intimate partner?</div><div class="q-ans"><label><input type="radio" name="q21h" value="yes"> Yes</label><label><input type="radio" name="q21h" value="no"> No</label></div></div>
+        <div class="q-row"><div class="q-text">21.i. Have you ever been convicted of a misdemeanor crime of domestic violence?</div><div class="q-ans"><label><input type="radio" name="q21i" value="yes"> Yes</label><label><input type="radio" name="q21i" value="no"> No</label></div></div>
+        <div class="q-row"><div class="q-text">21.l. Are you an alien illegally or unlawfully in the United States?</div><div class="q-ans"><label><input type="radio" name="q21l" value="yes"> Yes</label><label><input type="radio" name="q21l" value="no"> No</label></div></div>
+      </div>
+
+      <!-- Section C: NICS -->
+      <div class="f4473-section">
+        <h4>Section C — Transferor / Seller (to be completed by FFL)</h4>
+        <div class="f4473-grid-2">
+          <div class="form-group"><label>Transaction Date <span class="req">*</span></label><input type="date" id="f-txdate" /></div>
+          <div class="form-group"><label>NICS Transaction # (NTN)</label><input type="text" id="f-ntn" placeholder="NTN or state reference #" /></div>
+          <div class="form-group"><label>NICS Result <span class="req">*</span></label>
+            <select id="f-nics">
+              <option value="">Select…</option>
+              <option value="proceed">Proceed</option>
+              <option value="delayed">Delayed</option>
+              <option value="denied">Denied</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Reason if Denied / Notes</label><input type="text" id="f-nics-notes" placeholder="Notes…" /></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="page" id="page-reports">
+    <div class="page-header">
+      <div><h2>Reports</h2><p>Inventory analytics &amp; transfer history</p></div>
+      <button class="btn btn--ghost btn--sm" onclick="printATFReport()">🖨 Print A&amp;D Report</button>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h4>Inventory by Type</h4>
+        <canvas id="chartByType"></canvas>
+      </div>
+      <div class="chart-card">
+        <h4>Top Manufacturers</h4>
+        <canvas id="chartMfr"></canvas>
+      </div>
+      <div class="chart-card chart-full">
+        <h4>Acquisitions — Last 12 Months</h4>
+        <canvas id="chartByMonth"></canvas>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar"><h3>Summary</h3></div>
+      <table>
+        <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+        <tbody id="reports-summary-tbody"><tr><td colspan="2" style="text-align:center;color:var(--muted);padding:24px">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AUDIT LOG -->
+  <div class="page" id="page-auditlog">
+    <div class="page-header">
+      <div><h2>Audit Log</h2><p>Complete history of all changes to your records</p></div>
+      <button class="btn btn--ghost btn--sm" onclick="loadAuditLog()">↺ Refresh</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <h3 id="audit-count">Audit Entries</h3>
+        <input class="search-input" placeholder="Filter…" id="audit-filter" oninput="filterAuditLog(this.value)" />
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Time</th><th>Action</th><th>Table</th><th>Record #</th><th>Details</th></tr></thead>
+          <tbody id="audit-tbody"><tr><td colspan="5"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="page-header"><div><h2>Settings</h2><p>Manage your profile and account</p></div></div>
+
+    <div class="settings-section">
+      <h3>Shop Profile</h3>
+      <p class="desc">This information appears on your ATF reports</p>
+      <div class="settings-form-row">
+        <div class="settings-field"><label>Full Name</label><input type="text" id="s-name" placeholder="John Smith" /></div>
+        <div class="settings-field"><label>Phone</label><input type="tel" id="s-phone" placeholder="(555) 000-0000" /></div>
+      </div>
+      <div class="settings-form-row">
+        <div class="settings-field"><label>Shop Name</label><input type="text" id="s-shop" placeholder="Smith's Firearms LLC" /></div>
+        <div class="settings-field"><label>FFL Number</label><input type="text" id="s-ffl" placeholder="9-XX-XXX-XX-XX-XXXXX" /></div>
+      </div>
+      <button class="btn btn--red btn--sm" onclick="saveProfile()">Save Profile</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>Account</h3>
+      <p class="desc">Your login credentials</p>
+      <div class="settings-form-row">
+        <div class="settings-field"><label>Email Address</label><input type="email" id="s-email" disabled /></div>
+        <div class="settings-field"><label>Current Plan</label><input type="text" id="s-plan" disabled /></div>
+      </div>
+      <button class="btn btn--ghost btn--sm" id="showPwBtn" onclick="document.getElementById('pwSection').style.display='block';this.style.display='none'">Change Password</button>
+      <div id="pwSection" style="display:none;margin-top:16px">
+        <div class="settings-form-row">
+          <div class="settings-field"><label>Current Password</label><input type="password" id="s-curpw" placeholder="••••••••" /></div>
+          <div class="settings-field"><label>New Password</label><input type="password" id="s-newpw" placeholder="Min 6 characters" /></div>
+        </div>
+        <div class="settings-field" style="max-width:260px"><label>Confirm New Password</label><input type="password" id="s-conpw" placeholder="••••••••" /></div>
+        <button class="btn btn--red btn--sm" onclick="changePassword()">Update Password</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Upgrade Plan</h3>
+      <p class="desc">Unlock unlimited A&amp;D entries, multi-location support, and priority support</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn--ghost btn--sm" onclick="toast('Billing coming soon! Email billing@gunvault.com','success')">Starter — $49/mo</button>
+        <button class="btn btn--red btn--sm"   onclick="toast('Billing coming soon! Email billing@gunvault.com','success')">Pro — $99/mo ⭐</button>
+        <button class="btn btn--ghost btn--sm" onclick="toast('Billing coming soon! Email billing@gunvault.com','success')">Enterprise — $149/mo</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Locations</h3>
+      <p class="desc">Manage multiple store locations or gun ranges under one account</p>
+      <div id="locations-list" style="margin-bottom:14px"></div>
+      <button class="btn btn--ghost btn--sm" onclick="openLocationModal()">+ Add Location</button>
+    </div>
+
+    <div class="settings-section danger-zone">
+      <h3>Danger Zone</h3>
+      <p class="desc">These actions are permanent and cannot be undone</p>
+      <button class="btn btn--sm" style="background:rgba(239,68,68,.12);color:#f87171;border:none" onclick="confirmDeleteAccount()">Delete My Account</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- ADD / EDIT FIREARM MODAL -->
+<div class="modal-overlay" id="firearmModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="firearmModalTitle">Add Firearm to A&amp;D Book</h3>
+      <button class="modal-close" onclick="closeFirearmModal()">×</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Manufacturer <span class="req">*</span></label>
+        <input type="text" id="fm-mfr" placeholder="Glock, Smith & Wesson, Ruger…" />
+      </div>
+      <div class="form-group">
+        <label>Importer</label>
+        <input type="text" id="fm-imp" placeholder="If imported (leave blank if US-made)" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Model <span class="req">*</span></label>
+        <input type="text" id="fm-model" placeholder="G17, M&P 9, AR-15…" />
+      </div>
+      <div class="form-group">
+        <label>Serial Number <span class="req">*</span></label>
+        <input type="text" id="fm-serial" placeholder="ABC123456" />
+        <div class="form-hint">Must be unique per dealer — duplicates rejected</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Caliber / Gauge <span class="req">*</span></label>
+        <input type="text" id="fm-caliber" placeholder="9mm, .45 ACP, .223, 12ga…" />
+      </div>
+      <div class="form-group">
+        <label>Type <span class="req">*</span></label>
+        <select id="fm-type">
+          <option value="">Select type…</option>
+          <option>Pistol</option>
+          <option>Revolver</option>
+          <option>Rifle</option>
+          <option>Shotgun</option>
+          <option>Receiver/Frame</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Acquisition Date <span class="req">*</span></label>
+        <input type="date" id="fm-acqdate" />
+      </div>
+      <div class="form-group">
+        <label>Acquired From <span class="req">*</span></label>
+        <input type="text" id="fm-acqfrom" placeholder="Distributor, manufacturer, individual…" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <input type="text" id="fm-notes" placeholder="Condition, additional info…" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn--ghost" onclick="closeFirearmModal()">Cancel</button>
+      <button class="btn btn--red" id="firearmSubmitBtn" onclick="submitFirearm()">Add to A&amp;D Book</button>
+    </div>
+  </div>
+</div>
+
+<!-- DISPOSE MODAL -->
+<div class="modal-overlay" id="disposeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Record Disposition / Transfer</h3>
+      <button class="modal-close" onclick="closeDisposeModal()">×</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:18px">
+      Transferring: <strong id="dispose-firearm-name" style="color:var(--white)"></strong>
+    </p>
+    <div class="form-group">
+      <label>Select Existing Customer</label>
+      <select id="dispose-customer-select" onchange="onDisposeCustomerSelect()">
+        <option value="">— Manual entry (individual / FFL) —</option>
+      </select>
+      <div class="form-hint">Choose a customer to auto-fill the transferee field</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Disposition Date <span class="req">*</span></label>
+        <input type="date" id="dispose-date" />
+      </div>
+      <div class="form-group">
+        <label>Transferred To <span class="req">*</span></label>
+        <input type="text" id="dispose-to" placeholder="Name, FFL #, or business name" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn--ghost" onclick="closeDisposeModal()">Cancel</button>
+      <button class="btn btn--red" onclick="submitDispose()">Record Transfer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT CUSTOMER MODAL -->
+<div class="modal-overlay" id="customerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="customerModalTitle">Add Customer</h3>
+      <button class="modal-close" onclick="closeCustomerModal()">×</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>First Name <span class="req">*</span></label>
+        <input type="text" id="cm-first" placeholder="John" />
+      </div>
+      <div class="form-group">
+        <label>Last Name <span class="req">*</span></label>
+        <input type="text" id="cm-last" placeholder="Smith" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="cm-email" placeholder="john@email.com" />
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="tel" id="cm-phone" placeholder="(555) 000-0000" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Address</label>
+      <input type="text" id="cm-address" placeholder="123 Main St, City, State ZIP" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>ID Type</label>
+        <select id="cm-idtype">
+          <option value="">Select…</option>
+          <option>Driver's License</option>
+          <option>State ID</option>
+          <option>Passport</option>
+          <option>Military ID</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>ID Number</label>
+        <input type="text" id="cm-idnum" placeholder="ID number" />
+      </div>
+    </div>
+    <div class="form-group" style="max-width:200px">
+      <label>Date of Birth</label>
+      <input type="date" id="cm-dob" />
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <input type="text" id="cm-notes" placeholder="Any additional info…" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn--ghost" onclick="closeCustomerModal()">Cancel</button>
+      <button class="btn btn--red" id="customerSubmitBtn" onclick="submitCustomer()">Add Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- CSV IMPORT MODAL -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <h3>Import A&amp;D Records from CSV</h3>
+      <button class="modal-close" onclick="closeImportModal()">×</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Required columns: <strong style="color:var(--text)">manufacturer, model, serial_number, caliber, type, acquisition_date, acquisition_from</strong></p>
+    <div class="import-drop" id="importDrop" onclick="document.getElementById('importFile').click()">
+      <div style="font-size:32px">📂</div>
+      <p>Click to select a CSV file, or drag &amp; drop here</p>
+      <input type="file" id="importFile" accept=".csv" style="display:none" onchange="onImportFile(this)" />
+    </div>
+    <div class="import-result" id="importResult"></div>
+    <div class="import-preview" id="importPreview">
+      <table><thead id="importPreviewHead"></thead><tbody id="importPreviewBody"></tbody></table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn--ghost" onclick="closeImportModal()">Cancel</button>
+      <button class="btn btn--red" id="importSubmitBtn" onclick="doImport()" disabled>Import Records</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOCATION MODAL -->
+<div class="modal-overlay" id="locationModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3 id="locationModalTitle">Add Location</h3>
+      <button class="modal-close" onclick="closeLocationModal()">×</button>
+    </div>
+    <div class="form-group"><label>Location Name <span class="req">*</span></label><input type="text" id="loc-name" placeholder="Main Store, Range Location, Warehouse…" /></div>
+    <div class="form-group"><label>Address</label><input type="text" id="loc-address" placeholder="123 Main St, City, State ZIP" /></div>
+    <div class="form-group"><label>FFL Number (if different from main)</label><input type="text" id="loc-ffl" placeholder="9-XX-XXX-XX-XX-XXXXX" /></div>
+    <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:4px">
+      <input type="checkbox" id="loc-primary" style="width:auto;margin:0" />
+      <label for="loc-primary" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);cursor:pointer">Set as primary location</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn--ghost" onclick="closeLocationModal()">Cancel</button>
+      <button class="btn btn--red" id="locationSubmitBtn" onclick="submitLocation()">Add Location</button>
+    </div>
+  </div>
+</div>
+
+<!-- GLOBAL SEARCH OVERLAY -->
+<div class="search-results-overlay" id="searchOverlay" onclick="closeSearch(event)">
+  <div class="search-results-panel">
+    <div class="search-results-header">
+      <span id="searchResultsTitle">Results</span>
+      <button class="modal-close" onclick="closeSearchPanel()">×</button>
+    </div>
+    <div id="searchResultsBody"></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+'use strict';
+
+var TOKEN = localStorage.getItem('gv_token');
+var currentUser = null;
+var allFirearms = [];
+var allCustomers = [];
+var allAuditLog = [];
+var allLocations = [];
+var allForms4473 = [];
+var dashboardData = {};
+var adFilterMode = 'all';
+var editingFirearmId = null;
+var editingCustomerId = null;
+var disposingFirearmId = null;
+var editingLocationId = null;
+var chartByType = null;
+var chartMfr = null;
+var chartByMonth = null;
+var importParsedRows = [];
+var searchDebounce = null;
+
+if (!TOKEN) { window.location.href = '/'; }
+
+// ── API helper ──────────────────────────────
+async function api(method, url, body) {
+  var opts = { method: method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN } };
+  if (body) opts.body = JSON.stringify(body);
+  var r = await fetch(url, opts);
+  var data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+// ── Init ─────────────────────────────────────
+async function init() {
+  try {
+    var data = await api('GET', '/api/app/me');
+    currentUser = data.user;
+    document.getElementById('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+    document.getElementById('userName').textContent   = currentUser.name;
+    document.getElementById('userPlan').textContent   = (currentUser.plan || 'free') + ' plan';
+    var h = new Date().getHours();
+    var g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('dashGreeting').textContent = g + ', ' + currentUser.name.split(' ')[0] + ' 👋';
+    await Promise.all([loadDashboard(), loadFirearms(), loadCustomers()]);
+  } catch(e) {
+    localStorage.removeItem('gv_token');
+    window.location.href = '/';
+  }
+}
+
+// ── Chart.js loader ───────────────────────────
+function loadChartJS(cb) {
+  if (window.Chart) { cb(); return; }
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js';
+  s.onload = cb;
+  document.head.appendChild(s);
+}
+
+// ── Navigation ───────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.getElementById('page-' + name).classList.add('active');
+  var nav = document.getElementById('nav-' + name);
+  if (nav) nav.classList.add('active');
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+  if (name === 'adbook')    renderFirearms();
+  if (name === 'customers') renderCustomers();
+  if (name === 'settings')  { prefillSettings(); loadLocations(); }
+  if (name === 'reports')   loadReports();
+  if (name === 'auditlog')  loadAuditLog();
+  if (name === 'form4473')  { loadForms4473(); populate4473Dropdowns(); }
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+
+function logout() {
+  localStorage.removeItem('gv_token');
+  localStorage.removeItem('gv_user');
+  window.location.href = '/';
+}
+
+// ── Dashboard ────────────────────────────────
+async function loadDashboard() {
+  try {
+    var d = await api('GET', '/api/app/dashboard');
+    dashboardData = d;
+    document.getElementById('stat-inventory').textContent   = d.in_inventory;
+    document.getElementById('stat-total').textContent       = d.total_firearms;
+    document.getElementById('stat-transferred').textContent = d.transferred;
+    document.getElementById('stat-customers').textContent   = d.total_customers;
+    updateOnboarding(d);
+  } catch(e) {}
+}
+
+function updateOnboarding(d) {
+  var steps = 1;
+  if (currentUser && currentUser.ffl_number) { markStep(2, true); steps++; } else { markStep(2, false); }
+  if (d.total_firearms > 0) { markStep(3, true); steps++; } else { markStep(3, false); }
+  if (d.total_customers > 0) { markStep(4, true); steps++; } else { markStep(4, false); }
+  document.getElementById('onboardProgress').style.width = ((steps / 4) * 100) + '%';
+  if (steps === 4) {
+    document.getElementById('onboardingCard').style.display = 'none';
+    api('POST', '/api/app/onboarding/complete').catch(function(){});
+  }
+}
+
+function markStep(n, done) {
+  var c = document.getElementById('oc' + n), l = document.getElementById('ol' + n);
+  if (!c) return;
+  c.classList.toggle('done', done);
+  c.textContent = done ? '✓' : '';
+  if (l) l.classList.toggle('done', done);
+}
+
+function renderRecentFirearms() {
+  var tbody = document.getElementById('recent-tbody');
+  if (!allFirearms.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📒</div><p>No entries yet. Add your first firearm.</p><button class="btn btn--red btn--sm" onclick="openAddFirearmModal()">+ Add Firearm</button></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = allFirearms.slice(0, 6).map(function(f) {
+    return '<tr>' +
+      '<td style="color:var(--dim)">' + f.id + '</td>' +
+      '<td style="color:var(--white);font-weight:600">' + esc(f.manufacturer) + '</td>' +
+      '<td>' + esc(f.model) + '</td>' +
+      '<td class="td-mono">' + esc(f.serial_number) + '</td>' +
+      '<td>' + esc(f.type) + '</td>' +
+      '<td style="color:var(--dim)">' + fmtDate(f.acquisition_date) + '</td>' +
+      '<td>' + (!f.disposition_date ? '<span class="badge badge--green">In Stock</span>' : '<span class="badge badge--gray">Transferred</span>') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ── Firearms ─────────────────────────────────
+async function loadFirearms() {
+  try {
+    var data = await api('GET', '/api/app/firearms');
+    allFirearms = data.firearms || [];
+    renderFirearms();
+    renderRecentFirearms();
+  } catch(e) {}
+}
+
+function setADFilter(mode, btn) {
+  adFilterMode = mode;
+  document.querySelectorAll('.filter-tab').forEach(function(t){ t.classList.remove('active'); });
+  btn.classList.add('active');
+  renderFirearms();
+}
+
+function renderFirearms() {
+  var q = ((document.getElementById('adbook-search') || {}).value || '').toLowerCase();
+  var list = allFirearms.filter(function(f) {
+    if (adFilterMode === 'stock' && f.disposition_date) return false;
+    if (adFilterMode === 'transferred' && !f.disposition_date) return false;
+    if (!q) return true;
+    return (f.manufacturer + f.model + f.serial_number + f.caliber + f.type + (f.acquisition_from||'') + (f.disposition_to||'')).toLowerCase().includes(q);
+  });
+
+  var el = document.getElementById('adbook-count');
+  if (el) el.textContent = 'A&D Entries (' + list.length + ')';
+
+  var tbody = document.getElementById('adbook-tbody');
+  if (!tbody) return;
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="13"><div class="empty-state"><div class="empty-icon">📒</div><p>' +
+      (allFirearms.length ? 'No entries match your filter.' : 'No firearms yet. Add your first A&D entry.') + '</p>' +
+      (!allFirearms.length ? '<button class="btn btn--red btn--sm" onclick="openAddFirearmModal()">+ Add Entry</button>' : '') +
+      '</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(function(f) {
+    var inStock = !f.disposition_date;
+    var actions = inStock
+      ? '<button class="tbl-btn tbl-btn--edit" onclick="openEditFirearmModal(' + f.id + ')">Edit</button>&nbsp;<button class="tbl-btn tbl-btn--dispose" onclick="openDisposeModal(' + f.id + ')">Transfer</button>'
+      : '<span style="color:var(--dim);font-size:11px">—</span>';
+    return '<tr>' +
+      '<td style="color:var(--dim);font-size:11px">' + f.id + '</td>' +
+      '<td style="color:var(--white);font-weight:600">' + esc(f.manufacturer) + '</td>' +
+      '<td style="color:var(--dim)">' + esc(f.importer || '—') + '</td>' +
+      '<td>' + esc(f.model) + '</td>' +
+      '<td class="td-mono">' + esc(f.serial_number) + '</td>' +
+      '<td>' + esc(f.caliber) + '</td>' +
+      '<td>' + esc(f.type) + '</td>' +
+      '<td style="color:var(--dim);white-space:nowrap">' + fmtDate(f.acquisition_date) + '</td>' +
+      '<td>' + esc(f.acquisition_from) + '</td>' +
+      '<td style="color:var(--dim);white-space:nowrap">' + (f.disposition_date ? fmtDate(f.disposition_date) : '—') + '</td>' +
+      '<td>' + esc(f.disposition_to || '—') + '</td>' +
+      '<td>' + (inStock ? '<span class="badge badge--green">In Stock</span>' : '<span class="badge badge--gray">Transferred</span>') + '</td>' +
+      '<td style="white-space:nowrap">' + actions + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ── Add firearm ──
+function openAddFirearmModal() {
+  editingFirearmId = null;
+  clearFirearmForm();
+  document.getElementById('firearmModalTitle').textContent = 'Add Firearm to A&D Book';
+  document.getElementById('firearmSubmitBtn').textContent  = 'Add to A&D Book';
+  document.getElementById('fm-acqdate').value = todayISO();
+  document.getElementById('firearmModal').classList.add('open');
+}
+
+function openEditFirearmModal(id) {
+  var f = allFirearms.find(function(x){ return x.id === id; });
+  if (!f || f.disposition_date) return;
+  editingFirearmId = id;
+  document.getElementById('firearmModalTitle').textContent = 'Edit Firearm Record';
+  document.getElementById('firearmSubmitBtn').textContent  = 'Save Changes';
+  document.getElementById('fm-mfr').value     = f.manufacturer || '';
+  document.getElementById('fm-imp').value     = f.importer || '';
+  document.getElementById('fm-model').value   = f.model || '';
+  document.getElementById('fm-serial').value  = f.serial_number || '';
+  document.getElementById('fm-caliber').value = f.caliber || '';
+  document.getElementById('fm-type').value    = f.type || '';
+  document.getElementById('fm-acqdate').value = f.acquisition_date || '';
+  document.getElementById('fm-acqfrom').value = f.acquisition_from || '';
+  document.getElementById('fm-notes').value   = f.notes || '';
+  document.getElementById('firearmModal').classList.add('open');
+}
+
+function closeFirearmModal() {
+  document.getElementById('firearmModal').classList.remove('open');
+  editingFirearmId = null;
+}
+
+function clearFirearmForm() {
+  ['fm-mfr','fm-imp','fm-model','fm-serial','fm-caliber','fm-acqdate','fm-acqfrom','fm-notes'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('fm-type').value = '';
+}
+
+async function submitFirearm() {
+  var v = {
+    manufacturer: document.getElementById('fm-mfr').value.trim(),
+    model:        document.getElementById('fm-model').value.trim(),
+    serial_number:document.getElementById('fm-serial').value.trim(),
+    caliber:      document.getElementById('fm-caliber').value.trim(),
+    type:         document.getElementById('fm-type').value,
+    acquisition_date: document.getElementById('fm-acqdate').value,
+    acquisition_from: document.getElementById('fm-acqfrom').value.trim()
+  };
+  for (var k in v) { if (!v[k]) { toast('Please fill in all required fields', 'error'); return; } }
+  v.importer = document.getElementById('fm-imp').value.trim() || null;
+  v.notes    = document.getElementById('fm-notes').value.trim() || null;
+  try {
+    if (editingFirearmId) {
+      await api('PATCH', '/api/app/firearms/' + editingFirearmId, v);
+      toast('Firearm record updated');
+    } else {
+      await api('POST', '/api/app/firearms', v);
+      toast('Firearm added to A&D Book');
+    }
+    closeFirearmModal();
+    loadFirearms();
+    loadDashboard();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── Dispose ──
+function openDisposeModal(id) {
+  var f = allFirearms.find(function(x){ return x.id === id; });
+  if (!f) return;
+  disposingFirearmId = id;
+  document.getElementById('dispose-firearm-name').textContent = f.manufacturer + ' ' + f.model + ' — S/N: ' + f.serial_number;
+  document.getElementById('dispose-date').value = todayISO();
+  document.getElementById('dispose-to').value   = '';
+
+  var sel = document.getElementById('dispose-customer-select');
+  sel.innerHTML = '<option value="">— Manual entry (individual / FFL) —</option>';
+  allCustomers.forEach(function(c) {
+    var opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.first_name + ' ' + c.last_name + (c.phone ? '  ·  ' + c.phone : '');
+    sel.appendChild(opt);
+  });
+
+  document.getElementById('disposeModal').classList.add('open');
+}
+
+function onDisposeCustomerSelect() {
+  var sel = document.getElementById('dispose-customer-select');
+  var cid = sel.value;
+  if (!cid) { document.getElementById('dispose-to').value = ''; return; }
+  var c = allCustomers.find(function(x){ return x.id == cid; });
+  if (c) document.getElementById('dispose-to').value = c.first_name + ' ' + c.last_name + (c.address ? ', ' + c.address : '');
+}
+
+function closeDisposeModal() {
+  document.getElementById('disposeModal').classList.remove('open');
+  disposingFirearmId = null;
+}
+
+async function submitDispose() {
+  var date = document.getElementById('dispose-date').value;
+  var to   = document.getElementById('dispose-to').value.trim();
+  var cid  = document.getElementById('dispose-customer-select').value;
+  if (!date || !to) { toast('Disposition date and transferee are required', 'error'); return; }
+  try {
+    await api('PATCH', '/api/app/firearms/' + disposingFirearmId + '/dispose', {
+      disposition_date: date, disposition_to: to,
+      disposition_customer_id: cid ? parseInt(cid) : null
+    });
+    toast('Transfer recorded successfully');
+    closeDisposeModal();
+    loadFirearms();
+    loadDashboard();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── ATF Print report ──
+function printATFReport() {
+  if (!allFirearms.length) { toast('No A&D entries to print', 'error'); return; }
+  var shop = (currentUser && currentUser.shop_name) ? currentUser.shop_name : 'FFL Dealer';
+  var ffl  = (currentUser && currentUser.ffl_number) ? currentUser.ffl_number : 'N/A';
+  var now  = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+
+  var rows = allFirearms.map(function(f) {
+    return '<tr><td>' + f.id + '</td><td>' + esc(f.acquisition_date) + '</td>' +
+      '<td>' + esc(f.manufacturer) + '</td><td>' + esc(f.importer||'') + '</td>' +
+      '<td>' + esc(f.model) + '</td><td><b>' + esc(f.serial_number) + '</b></td>' +
+      '<td>' + esc(f.type) + '</td><td>' + esc(f.caliber) + '</td>' +
+      '<td>' + esc(f.acquisition_from) + '</td>' +
+      '<td>' + esc(f.disposition_date||'') + '</td><td>' + esc(f.disposition_to||'') + '</td></tr>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html><head><title>ATF A&D Report</title>' +
+    '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:10px;padding:20px}' +
+    'h1{font-size:14px;margin-bottom:4px}p.sub{font-size:10px;color:#555;margin-bottom:14px}' +
+    'table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:4px 6px;text-align:left;font-size:9px}' +
+    'th{background:#e8e8e8;font-weight:bold}tr:nth-child(even){background:#f7f7f7}' +
+    '.foot{margin-top:18px;font-size:9px;color:#888}' +
+    '@media print{body{padding:8px}}</style></head><body>' +
+    '<h1>Acquisition &amp; Disposition Record — ' + esc(shop) + '</h1>' +
+    '<p class="sub">FFL #: <b>' + esc(ffl) + '</b> &nbsp;|&nbsp; Printed: ' + now + ' &nbsp;|&nbsp; Total entries: <b>' + allFirearms.length + '</b>' +
+    ' &nbsp;|&nbsp; In inventory: <b>' + allFirearms.filter(function(f){return !f.disposition_date;}).length + '</b></p>' +
+    '<table><thead><tr><th>Log#</th><th>Acq. Date</th><th>Manufacturer</th><th>Importer</th><th>Model</th>' +
+    '<th>Serial #</th><th>Type</th><th>Caliber</th><th>Acquired From</th><th>Disp. Date</th><th>Transferred To</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<div class="foot">Generated by GunVault &mdash; 27 CFR 478.125 compliant</div>' +
+    '<script>window.onload=function(){window.print();}<\/script></body></html>';
+
+  var w = window.open('', '_blank', 'width=1100,height=720');
+  w.document.write(html);
+  w.document.close();
+}
+
+function exportFirearmsCSV() {
+  var cols = ['id','manufacturer','importer','model','serial_number','caliber','type','acquisition_date','acquisition_from','disposition_date','disposition_to','notes'];
+  var csv = [cols.join(',')].concat(allFirearms.map(function(f){
+    return cols.map(function(c){ return '"' + (f[c]||'').toString().replace(/"/g,'""') + '"'; }).join(',');
+  })).join('\n');
+  downloadCSV('gunvault_ad_book.csv', csv);
+}
+
+// ── Customers ────────────────────────────────
+async function loadCustomers() {
+  try {
+    var data = await api('GET', '/api/app/customers');
+    allCustomers = data.customers || [];
+    renderCustomers();
+  } catch(e) {}
+}
+
+var _cFilter = '';
+function filterCustomers(q) { _cFilter = q || ''; renderCustomers(); }
+
+function renderCustomers() {
+  var q = _cFilter.toLowerCase();
+  var list = allCustomers.filter(function(c) {
+    if (!q) return true;
+    return (c.first_name + ' ' + c.last_name + (c.email||'') + (c.phone||'')).toLowerCase().includes(q);
+  });
+
+  var el = document.getElementById('customers-count');
+  if (el) el.textContent = 'Customers (' + list.length + ')';
+
+  var tbody = document.getElementById('customers-tbody');
+  if (!tbody) return;
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">👥</div><p>' +
+      (allCustomers.length ? 'No customers match your search.' : 'No customers yet.') + '</p>' +
+      (!allCustomers.length ? '<button class="btn btn--red btn--sm" onclick="openAddCustomerModal()">+ Add Customer</button>' : '') +
+      '</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(function(c, i) {
+    return '<tr>' +
+      '<td style="color:var(--dim)">' + (i+1) + '</td>' +
+      '<td style="color:var(--white);font-weight:600">' + esc(c.first_name) + ' ' + esc(c.last_name) + '</td>' +
+      '<td>' + esc(c.email||'—') + '</td>' +
+      '<td>' + esc(c.phone||'—') + '</td>' +
+      '<td>' + esc(c.id_type||'—') + '</td>' +
+      '<td style="color:var(--dim)">' + (c.dob ? fmtDate(c.dob) : '—') + '</td>' +
+      '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(c.address||'') + '">' + esc(c.address||'—') + '</td>' +
+      '<td style="color:var(--dim);white-space:nowrap">' + fmtDate(c.created_at) + '</td>' +
+      '<td style="white-space:nowrap">' +
+        '<button class="tbl-btn tbl-btn--edit" onclick="openEditCustomerModal(' + c.id + ')">Edit</button>&nbsp;' +
+        '<button class="tbl-btn tbl-btn--del" onclick="deleteCustomer(' + c.id + ')">Delete</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function openAddCustomerModal() {
+  editingCustomerId = null;
+  clearCustomerForm();
+  document.getElementById('customerModalTitle').textContent = 'Add Customer';
+  document.getElementById('customerSubmitBtn').textContent  = 'Add Customer';
+  document.getElementById('customerModal').classList.add('open');
+}
+
+function openEditCustomerModal(id) {
+  var c = allCustomers.find(function(x){ return x.id === id; });
+  if (!c) return;
+  editingCustomerId = id;
+  document.getElementById('customerModalTitle').textContent = 'Edit Customer';
+  document.getElementById('customerSubmitBtn').textContent  = 'Save Changes';
+  document.getElementById('cm-first').value   = c.first_name || '';
+  document.getElementById('cm-last').value    = c.last_name || '';
+  document.getElementById('cm-email').value   = c.email || '';
+  document.getElementById('cm-phone').value   = c.phone || '';
+  document.getElementById('cm-address').value = c.address || '';
+  document.getElementById('cm-idtype').value  = c.id_type || '';
+  document.getElementById('cm-idnum').value   = c.id_number || '';
+  document.getElementById('cm-dob').value     = c.dob || '';
+  document.getElementById('cm-notes').value   = c.notes || '';
+  document.getElementById('customerModal').classList.add('open');
+}
+
+function closeCustomerModal() {
+  document.getElementById('customerModal').classList.remove('open');
+  editingCustomerId = null;
+}
+
+function clearCustomerForm() {
+  ['cm-first','cm-last','cm-email','cm-phone','cm-address','cm-idnum','cm-dob','cm-notes'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('cm-idtype').value = '';
+}
+
+async function submitCustomer() {
+  var first = document.getElementById('cm-first').value.trim();
+  var last  = document.getElementById('cm-last').value.trim();
+  if (!first || !last) { toast('First and last name are required', 'error'); return; }
+  var body = {
+    first_name: first, last_name: last,
+    email:     document.getElementById('cm-email').value.trim()   || null,
+    phone:     document.getElementById('cm-phone').value.trim()   || null,
+    address:   document.getElementById('cm-address').value.trim() || null,
+    id_type:   document.getElementById('cm-idtype').value         || null,
+    id_number: document.getElementById('cm-idnum').value.trim()   || null,
+    dob:       document.getElementById('cm-dob').value            || null,
+    notes:     document.getElementById('cm-notes').value.trim()   || null
+  };
+  try {
+    if (editingCustomerId) {
+      await api('PATCH', '/api/app/customers/' + editingCustomerId, body);
+      toast('Customer updated');
+    } else {
+      await api('POST', '/api/app/customers', body);
+      toast('Customer added');
+    }
+    closeCustomerModal();
+    loadCustomers();
+    loadDashboard();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function deleteCustomer(id) {
+  var c = allCustomers.find(function(x){ return x.id === id; });
+  if (!c) return;
+  if (!confirm('Delete ' + c.first_name + ' ' + c.last_name + '? This cannot be undone.')) return;
+  try {
+    await api('DELETE', '/api/app/customers/' + id);
+    toast('Customer deleted');
+    loadCustomers();
+    loadDashboard();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function exportCustomersCSV() {
+  var cols = ['id','first_name','last_name','email','phone','address','id_type','id_number','dob','notes','created_at'];
+  var csv = [cols.join(',')].concat(allCustomers.map(function(c){
+    return cols.map(function(k){ return '"' + (c[k]||'').toString().replace(/"/g,'""') + '"'; }).join(',');
+  })).join('\n');
+  downloadCSV('gunvault_customers.csv', csv);
+}
+
+// ── Settings ──────────────────────────────────
+function prefillSettings() {
+  if (!currentUser) return;
+  document.getElementById('s-name').value  = currentUser.name || '';
+  document.getElementById('s-phone').value = currentUser.phone || '';
+  document.getElementById('s-shop').value  = currentUser.shop_name || '';
+  document.getElementById('s-ffl').value   = currentUser.ffl_number || '';
+  document.getElementById('s-email').value = currentUser.email || '';
+  document.getElementById('s-plan').value  = (currentUser.plan||'free').charAt(0).toUpperCase() + (currentUser.plan||'free').slice(1) + ' Plan';
+}
+
+async function saveProfile() {
+  var name = document.getElementById('s-name').value.trim();
+  if (!name) { toast('Name is required', 'error'); return; }
+  try {
+    await api('PATCH', '/api/app/me', {
+      name: name,
+      phone:    document.getElementById('s-phone').value.trim(),
+      shop_name:document.getElementById('s-shop').value.trim(),
+      ffl_number:document.getElementById('s-ffl').value.trim()
+    });
+    currentUser.name       = name;
+    currentUser.phone      = document.getElementById('s-phone').value.trim();
+    currentUser.shop_name  = document.getElementById('s-shop').value.trim();
+    currentUser.ffl_number = document.getElementById('s-ffl').value.trim();
+    document.getElementById('userName').textContent  = name;
+    document.getElementById('userAvatar').textContent= name.charAt(0).toUpperCase();
+    toast('Profile saved');
+    loadDashboard();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function changePassword() {
+  var cur  = document.getElementById('s-curpw').value;
+  var nw   = document.getElementById('s-newpw').value;
+  var conf = document.getElementById('s-conpw').value;
+  if (!cur || !nw || !conf) { toast('All fields required', 'error'); return; }
+  if (nw !== conf) { toast('New passwords do not match', 'error'); return; }
+  if (nw.length < 6) { toast('New password must be at least 6 characters', 'error'); return; }
+  try {
+    await api('PATCH', '/api/app/password', { current_password: cur, new_password: nw });
+    document.getElementById('s-curpw').value = '';
+    document.getElementById('s-newpw').value = '';
+    document.getElementById('s-conpw').value = '';
+    document.getElementById('pwSection').style.display = 'none';
+    document.getElementById('showPwBtn').style.display = '';
+    toast('Password changed successfully');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function confirmDeleteAccount() {
+  if (!confirm('Delete your entire account and ALL A&D records? This is permanent and cannot be undone.')) return;
+  toast('To delete your account, email support@gunvault.com from your registered address.', 'error');
+}
+
+// ── Utilities ────────────────────────────────
+function toast(msg, type) {
+  var el = document.createElement('div');
+  el.className = 'toast toast--' + (type || 'success');
+  el.innerHTML = (type === 'error' ? '❌' : '✅') + ' ' + esc(msg);
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(function(){ el.remove(); }, 3500);
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+
+function fmtDate(dt) {
+  if (!dt) return '—';
+  var d = dt.includes && dt.includes('T') ? new Date(dt) : new Date(dt + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function downloadCSV(name, content) {
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(content);
+  a.download = name;
+  a.click();
+}
+
+// ── Reports ───────────────────────────────────
+async function loadReports() {
+  try {
+    var d = dashboardData && dashboardData.total_firearms !== undefined ? dashboardData : await api('GET', '/api/app/dashboard');
+    dashboardData = d;
+    // Summary table
+    var rows = [
+      ['Total A&D Entries', d.total_firearms || 0],
+      ['In Inventory', d.in_inventory || 0],
+      ['Transferred Out', d.transferred || 0],
+      ['Total Customers', d.total_customers || 0]
+    ];
+    document.getElementById('reports-summary-tbody').innerHTML = rows.map(function(r){
+      return '<tr><td style="color:var(--muted)">' + r[0] + '</td><td style="color:var(--white);font-weight:700">' + r[1] + '</td></tr>';
+    }).join('');
+    // Charts
+    loadChartJS(function() { renderCharts(d); });
+  } catch(e) { console.error('loadReports', e); }
+}
+
+function renderCharts(d) {
+  var COLORS = ['#c41e3a','#22d3ee','#fbbf24','#4ade80','#a78bfa','#f97316','#ec4899','#6366f1'];
+  var dark = { color: '#94a3b8', grid: 'rgba(51,65,85,.6)' };
+
+  // By Type pie
+  var byType = d.by_type || [];
+  var ctx1 = document.getElementById('chartByType');
+  if (ctx1) {
+    if (chartByType) chartByType.destroy();
+    chartByType = new Chart(ctx1, {
+      type: 'doughnut',
+      data: { labels: byType.map(function(x){return x.type;}), datasets: [{ data: byType.map(function(x){return x.count;}), backgroundColor: COLORS, borderWidth: 0 }] },
+      options: { plugins: { legend: { labels: { color: dark.color, font: { size: 11 } } } }, cutout: '60%' }
+    });
+  }
+
+  // Top manufacturers bar
+  var topMfr = d.top_manufacturers || [];
+  var ctx2 = document.getElementById('chartMfr');
+  if (ctx2) {
+    if (chartMfr) chartMfr.destroy();
+    chartMfr = new Chart(ctx2, {
+      type: 'bar',
+      data: { labels: topMfr.map(function(x){return x.manufacturer;}), datasets: [{ label: 'Count', data: topMfr.map(function(x){return x.count;}), backgroundColor: '#c41e3a', borderRadius: 6 }] },
+      options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: dark.color }, grid: { color: dark.grid } }, y: { ticks: { color: dark.color, stepSize: 1 }, grid: { color: dark.grid } } } }
+    });
+  }
+
+  // By month line
+  var byMonth = d.by_month || [];
+  var ctx3 = document.getElementById('chartByMonth');
+  if (ctx3) {
+    if (chartByMonth) chartByMonth.destroy();
+    chartByMonth = new Chart(ctx3, {
+      type: 'bar',
+      data: { labels: byMonth.map(function(x){return x.month;}), datasets: [{ label: 'Acquisitions', data: byMonth.map(function(x){return x.count;}), backgroundColor: 'rgba(196,30,58,.7)', borderRadius: 4 }] },
+      options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: dark.color, maxRotation: 45 }, grid: { color: dark.grid } }, y: { ticks: { color: dark.color, stepSize: 1 }, grid: { color: dark.grid }, beginAtZero: true } } }
+    });
+  }
+}
+
+// ── Audit Log ────────────────────────────────
+async function loadAuditLog() {
+  try {
+    var data = await api('GET', '/api/app/audit-log');
+    allAuditLog = data.log || [];
+    renderAuditLog(allAuditLog);
+  } catch(e) { console.error('loadAuditLog', e); }
+}
+
+var _auditFilter = '';
+function filterAuditLog(q) { _auditFilter = q; renderAuditLog(allAuditLog); }
+
+function renderAuditLog(log) {
+  var q = (_auditFilter || '').toLowerCase();
+  var list = q ? log.filter(function(e){ return (e.action + e.table_name + (e.record_id||'')).toLowerCase().includes(q); }) : log;
+  var el = document.getElementById('audit-count');
+  if (el) el.textContent = 'Audit Entries (' + list.length + ')';
+  var tbody = document.getElementById('audit-tbody');
+  if (!tbody) return;
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🔎</div><p>No audit entries found.</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(function(e) {
+    var newData = '';
+    try {
+      var nd = JSON.parse(e.new_data || '{}');
+      if (nd.manufacturer) newData = nd.manufacturer + ' ' + (nd.model || '') + ' S/N: ' + (nd.serial_number || '');
+      else if (nd.first_name) newData = nd.first_name + ' ' + (nd.last_name || '');
+      else newData = e.new_data ? e.new_data.substring(0, 60) : '';
+    } catch(ex) { newData = e.new_data ? String(e.new_data).substring(0,60) : ''; }
+    return '<tr>' +
+      '<td style="color:var(--dim);white-space:nowrap;font-size:11px">' + fmtDateTime(e.created_at) + '</td>' +
+      '<td><span class="audit-badge audit-' + e.action + '">' + esc(e.action) + '</span></td>' +
+      '<td style="color:var(--muted)">' + esc(e.table_name || '') + '</td>' +
+      '<td style="color:var(--dim)">' + esc(e.record_id || '') + '</td>' +
+      '<td style="color:#94a3b8;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(newData) + '">' + esc(newData) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function fmtDateTime(dt) {
+  if (!dt) return '—';
+  var d = new Date(dt);
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) + ' ' +
+    d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+}
+
+// ── Locations ─────────────────────────────────
+async function loadLocations() {
+  try {
+    var data = await api('GET', '/api/app/locations');
+    allLocations = data.locations || [];
+    renderLocations();
+  } catch(e) { console.error('loadLocations', e); }
+}
+
+function renderLocations() {
+  var el = document.getElementById('locations-list');
+  if (!el) return;
+  if (!allLocations.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--muted)">No locations added yet.</p>';
+    return;
+  }
+  el.innerHTML = allLocations.map(function(loc) {
+    return '<div class="location-card">' +
+      '<div>' +
+        '<div class="location-card__name">' + esc(loc.name) + (loc.is_primary ? ' <span class="badge--primary">Primary</span>' : '') + '</div>' +
+        '<div class="location-card__address">' + esc(loc.address || 'No address') + (loc.ffl_number ? ' · FFL: ' + esc(loc.ffl_number) : '') + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px">' +
+        '<button class="tbl-btn tbl-btn--edit" onclick="openEditLocationModal(' + loc.id + ')">Edit</button>' +
+        '<button class="tbl-btn tbl-btn--del" onclick="deleteLocation(' + loc.id + ')">Delete</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function openLocationModal() {
+  editingLocationId = null;
+  document.getElementById('locationModalTitle').textContent = 'Add Location';
+  document.getElementById('locationSubmitBtn').textContent  = 'Add Location';
+  document.getElementById('loc-name').value    = '';
+  document.getElementById('loc-address').value = '';
+  document.getElementById('loc-ffl').value     = '';
+  document.getElementById('loc-primary').checked = false;
+  document.getElementById('locationModal').classList.add('open');
+}
+
+function openEditLocationModal(id) {
+  var loc = allLocations.find(function(x){ return x.id === id; });
+  if (!loc) return;
+  editingLocationId = id;
+  document.getElementById('locationModalTitle').textContent = 'Edit Location';
+  document.getElementById('locationSubmitBtn').textContent  = 'Save Changes';
+  document.getElementById('loc-name').value    = loc.name || '';
+  document.getElementById('loc-address').value = loc.address || '';
+  document.getElementById('loc-ffl').value     = loc.ffl_number || '';
+  document.getElementById('loc-primary').checked = !!loc.is_primary;
+  document.getElementById('locationModal').classList.add('open');
+}
+
+function closeLocationModal() {
+  document.getElementById('locationModal').classList.remove('open');
+  editingLocationId = null;
+}
+
+async function submitLocation() {
+  var name = document.getElementById('loc-name').value.trim();
+  if (!name) { toast('Location name is required', 'error'); return; }
+  var body = {
+    name: name,
+    address:    document.getElementById('loc-address').value.trim() || null,
+    ffl_number: document.getElementById('loc-ffl').value.trim()    || null,
+    is_primary: document.getElementById('loc-primary').checked ? 1 : 0
+  };
+  try {
+    if (editingLocationId) {
+      await api('PATCH', '/api/app/locations/' + editingLocationId, body);
+      toast('Location updated');
+    } else {
+      await api('POST', '/api/app/locations', body);
+      toast('Location added');
+    }
+    closeLocationModal();
+    loadLocations();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function deleteLocation(id) {
+  var loc = allLocations.find(function(x){ return x.id === id; });
+  if (!loc) return;
+  if (!confirm('Delete location "' + loc.name + '"?')) return;
+  try {
+    await api('DELETE', '/api/app/locations/' + id);
+    toast('Location deleted');
+    loadLocations();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── Form 4473 ─────────────────────────────────
+async function loadForms4473() {
+  try {
+    var data = await api('GET', '/api/app/form4473');
+    allForms4473 = data.forms || [];
+    render4473List();
+  } catch(e) { console.error('loadForms4473', e); }
+}
+
+function render4473List() {
+  document.getElementById('form4473List').style.display = 'block';
+  document.getElementById('form4473Editor').style.display = 'none';
+  var el = document.getElementById('f4473-count');
+  if (el) el.textContent = 'Form 4473 Records (' + allForms4473.length + ')';
+  var tbody = document.getElementById('f4473-tbody');
+  if (!tbody) return;
+  if (!allForms4473.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📋</div><p>No forms yet. Click "+ New Form" to create one.</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = allForms4473.map(function(f) {
+    var nics = f.nics_result || 'pending';
+    var nicsColor = nics === 'proceed' ? 'green' : nics === 'denied' ? 'del' : 'dispose';
+    return '<tr>' +
+      '<td style="color:var(--dim)">' + f.id + '</td>' +
+      '<td style="color:var(--white);font-weight:600">' + esc(f.transferee_name || '—') + '</td>' +
+      '<td style="color:var(--muted)">' + esc(f.manufacturer ? f.manufacturer + ' ' + f.model : (f.firearm_id ? 'Record #' + f.firearm_id : '—')) + '</td>' +
+      '<td style="color:var(--dim)">' + fmtDate(f.transfer_date) + '</td>' +
+      '<td><span class="tbl-btn tbl-btn--' + nicsColor + '">' + nics.toUpperCase() + '</span></td>' +
+      '<td></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function populate4473Dropdowns() {
+  var cSel = document.getElementById('f-customer-link');
+  var fSel = document.getElementById('f-firearm-link');
+  if (!cSel || !fSel) return;
+  cSel.innerHTML = '<option value="">— Select customer to auto-fill —</option>' +
+    allCustomers.map(function(c){ return '<option value="' + c.id + '">' + esc(c.first_name + ' ' + c.last_name) + '</option>'; }).join('');
+  fSel.innerHTML = '<option value="">— Select firearm —</option>' +
+    allFirearms.filter(function(f){ return !f.disposition_date; }).map(function(f){
+      return '<option value="' + f.id + '">' + esc(f.manufacturer + ' ' + f.model + ' — ' + f.serial_number) + '</option>';
+    }).join('');
+}
+
+function open4473New() {
+  document.getElementById('form4473List').style.display = 'none';
+  document.getElementById('form4473Editor').style.display = 'block';
+  document.getElementById('f-txdate').value = todayISO();
+  ['f-last','f-first','f-mid','f-address','f-pob','f-height','f-weight','f-ntn','f-nics-notes'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('f-dob').value   = '';
+  document.getElementById('f-sex').value   = '';
+  document.getElementById('f-idtype').value= '';
+  document.getElementById('f-idnum').value = '';
+  document.getElementById('f-idstate').value = '';
+  document.getElementById('f-nics').value  = '';
+  document.querySelectorAll('[name^="q21"]').forEach(function(r){ r.checked = false; });
+  document.getElementById('f-customer-link').value = '';
+  document.getElementById('f-firearm-link').value  = '';
+}
+
+function cancel4473() { render4473List(); }
+
+function autoFill4473Customer() {
+  var cid = document.getElementById('f-customer-link').value;
+  if (!cid) return;
+  var c = allCustomers.find(function(x){ return x.id == cid; });
+  if (!c) return;
+  document.getElementById('f-first').value   = c.first_name || '';
+  document.getElementById('f-last').value    = c.last_name  || '';
+  document.getElementById('f-dob').value     = c.dob        || '';
+  document.getElementById('f-address').value = c.address    || '';
+  document.getElementById('f-idtype').value  = c.id_type    || '';
+  document.getElementById('f-idnum').value   = c.id_number  || '';
+}
+
+function getRadioVal(name) {
+  var el = document.querySelector('[name="' + name + '"]:checked');
+  return el ? el.value : null;
+}
+
+async function submit4473() {
+  var last  = document.getElementById('f-last').value.trim();
+  var first = document.getElementById('f-first').value.trim();
+  var dob   = document.getElementById('f-dob').value;
+  var addr  = document.getElementById('f-address').value.trim();
+  var idnum = document.getElementById('f-idnum').value.trim();
+  var txdate= document.getElementById('f-txdate').value;
+  var nics  = document.getElementById('f-nics').value;
+  if (!last || !first || !dob || !addr || !idnum || !txdate || !nics) {
+    toast('Please fill in all required fields', 'error'); return;
+  }
+  var body = {
+    transferee_last:  last, transferee_first: first,
+    transferee_middle: document.getElementById('f-mid').value.trim()   || null,
+    transferee_address: addr,
+    transferee_dob:   dob,
+    transferee_pob:   document.getElementById('f-pob').value.trim()    || null,
+    transferee_height: document.getElementById('f-height').value.trim()|| null,
+    transferee_weight: document.getElementById('f-weight').value.trim()|| null,
+    transferee_sex:   document.getElementById('f-sex').value           || null,
+    id_type:          document.getElementById('f-idtype').value        || null,
+    id_number:        idnum,
+    id_state:         document.getElementById('f-idstate').value.trim()|| null,
+    q21a: getRadioVal('q21a'), q21b: getRadioVal('q21b'), q21c: getRadioVal('q21c'),
+    q21d: getRadioVal('q21d'), q21e: getRadioVal('q21e'), q21f: getRadioVal('q21f'),
+    q21g: getRadioVal('q21g'), q21h: getRadioVal('q21h'), q21i: getRadioVal('q21i'),
+    q21l: getRadioVal('q21l'),
+    transaction_date: txdate,
+    nics_transaction_number: document.getElementById('f-ntn').value.trim() || null,
+    nics_result: nics,
+    nics_notes: document.getElementById('f-nics-notes').value.trim()   || null,
+    firearm_id: document.getElementById('f-firearm-link').value        || null,
+    customer_id: document.getElementById('f-customer-link').value      || null
+  };
+  try {
+    await api('POST', '/api/app/form4473', body);
+    toast('Form 4473 saved');
+    loadForms4473();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── CSV Import ────────────────────────────────
+function openImportModal() {
+  importParsedRows = [];
+  document.getElementById('importFile').value = '';
+  document.getElementById('importPreview').style.display = 'none';
+  document.getElementById('importResult').style.display  = 'none';
+  document.getElementById('importSubmitBtn').disabled = true;
+  document.getElementById('importModal').classList.add('open');
+  // Drag and drop
+  var drop = document.getElementById('importDrop');
+  drop.ondragover = function(e){ e.preventDefault(); drop.classList.add('drag'); };
+  drop.ondragleave= function(){ drop.classList.remove('drag'); };
+  drop.ondrop     = function(e){ e.preventDefault(); drop.classList.remove('drag'); var f=e.dataTransfer.files[0]; if(f) processImportFile(f); };
+}
+
+function closeImportModal() {
+  document.getElementById('importModal').classList.remove('open');
+}
+
+function onImportFile(input) {
+  if (input.files && input.files[0]) processImportFile(input.files[0]);
+}
+
+function processImportFile(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    var lines = text.split(/\r?\n/).filter(function(l){ return l.trim(); });
+    if (lines.length < 2) { showImportResult('CSV file appears empty or has no data rows.', false); return; }
+    var headers = parseCSVLine(lines[0]).map(function(h){ return h.trim().toLowerCase(); });
+    var required = ['manufacturer','model','serial_number','caliber','type','acquisition_date','acquisition_from'];
+    var missing = required.filter(function(r){ return headers.indexOf(r) === -1; });
+    if (missing.length) { showImportResult('Missing required columns: ' + missing.join(', '), false); return; }
+    importParsedRows = lines.slice(1).map(function(line) {
+      var vals = parseCSVLine(line);
+      var row = {};
+      headers.forEach(function(h, i){ row[h] = vals[i] || ''; });
+      return row;
+    }).filter(function(r){ return r.manufacturer; });
+    // Preview
+    var preview = document.getElementById('importPreview');
+    document.getElementById('importPreviewHead').innerHTML = '<tr>' + headers.slice(0,7).map(function(h){ return '<th>' + esc(h) + '</th>'; }).join('') + '</tr>';
+    document.getElementById('importPreviewBody').innerHTML = importParsedRows.slice(0,5).map(function(r){
+      return '<tr>' + headers.slice(0,7).map(function(h){ return '<td>' + esc(r[h]||'') + '</td>'; }).join('') + '</tr>';
+    }).join('');
+    preview.style.display = 'block';
+    showImportResult('Parsed ' + importParsedRows.length + ' rows. First 5 shown above. Click Import to proceed.', true);
+    document.getElementById('importSubmitBtn').disabled = false;
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVLine(line) {
+  var result = [], cur = '', inQ = false;
+  for (var i = 0; i < line.length; i++) {
+    var c = line[i];
+    if (c === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else { inQ = !inQ; } }
+    else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur);
+  return result;
+}
+
+function showImportResult(msg, ok) {
+  var el = document.getElementById('importResult');
+  el.className = 'import-result ' + (ok ? 'ok' : 'err');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function doImport() {
+  if (!importParsedRows.length) return;
+  document.getElementById('importSubmitBtn').disabled = true;
+  try {
+    var data = await api('POST', '/api/app/firearms/import', { rows: importParsedRows });
+    showImportResult('Imported: ' + data.imported + '  |  Skipped (duplicate): ' + data.skipped + '  |  Errors: ' + data.errors, true);
+    loadFirearms();
+    loadDashboard();
+    setTimeout(function(){ closeImportModal(); }, 2000);
+  } catch(e) {
+    showImportResult(e.message, false);
+    document.getElementById('importSubmitBtn').disabled = false;
+  }
+}
+
+// ── Global Search ─────────────────────────────
+function onGlobalSearch(q) {
+  clearTimeout(searchDebounce);
+  if (!q || q.length < 2) { closeSearchPanel(); return; }
+  searchDebounce = setTimeout(function(){ doSearch(q); }, 300);
+}
+
+async function doSearch(q) {
+  try {
+    var data = await api('GET', '/api/app/search?q=' + encodeURIComponent(q));
+    var firearms  = data.firearms  || [];
+    var customers = data.customers || [];
+    var total = firearms.length + customers.length;
+    document.getElementById('searchResultsTitle').textContent = total + ' result' + (total !== 1 ? 's' : '') + ' for "' + q + '"';
+    var html = '';
+    if (!total) {
+      html = '<div class="search-no-results">No results found for "' + esc(q) + '"</div>';
+    } else {
+      if (firearms.length) {
+        html += '<div class="search-section-title">Firearms (' + firearms.length + ')</div>';
+        html += firearms.map(function(f) {
+          return '<div class="search-result-item" onclick="goToFirearm(' + f.id + ')">' +
+            '<div class="search-result-icon">🔫</div>' +
+            '<div><div class="search-result-name">' + esc(f.manufacturer + ' ' + f.model) + '</div>' +
+            '<div class="search-result-sub">S/N: ' + esc(f.serial_number) + ' · ' + esc(f.type) + ' · ' + esc(f.caliber) + '</div></div>' +
+          '</div>';
+        }).join('');
+      }
+      if (customers.length) {
+        html += '<div class="search-section-title">Customers (' + customers.length + ')</div>';
+        html += customers.map(function(c) {
+          return '<div class="search-result-item" onclick="goToCustomer(' + c.id + ')">' +
+            '<div class="search-result-icon">👤</div>' +
+            '<div><div class="search-result-name">' + esc(c.first_name + ' ' + c.last_name) + '</div>' +
+            '<div class="search-result-sub">' + esc(c.email || '') + (c.phone ? ' · ' + esc(c.phone) : '') + '</div></div>' +
+          '</div>';
+        }).join('');
+      }
+    }
+    document.getElementById('searchResultsBody').innerHTML = html;
+    document.getElementById('searchOverlay').classList.add('open');
+  } catch(e) { console.error('search', e); }
+}
+
+function goToFirearm(id) {
+  closeSearchPanel();
+  showPage('adbook');
+  var inp = document.getElementById('adbook-search');
+  var f = allFirearms.find(function(x){ return x.id === id; });
+  if (f && inp) { inp.value = f.serial_number; renderFirearms(); }
+}
+
+function goToCustomer(id) {
+  closeSearchPanel();
+  showPage('customers');
+  var c = allCustomers.find(function(x){ return x.id === id; });
+  if (c) { filterCustomers(c.first_name + ' ' + c.last_name); }
+}
+
+function closeSearch(e) {
+  if (e.target === document.getElementById('searchOverlay')) closeSearchPanel();
+}
+
+function closeSearchPanel() {
+  document.getElementById('searchOverlay').classList.remove('open');
+  document.getElementById('globalSearchInput').value = '';
+}
+
+// ── Close modals on overlay click ──────────────
+document.querySelectorAll('.modal-overlay').forEach(function(o) {
+  o.addEventListener('click', function(e) {
+    if (e.target === o) {
+      o.classList.remove('open');
+      editingFirearmId = editingCustomerId = disposingFirearmId = editingLocationId = null;
+    }
+  });
+});
+
+init();
+</script>
+</body>
+</html>
