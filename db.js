@@ -232,6 +232,9 @@ async function initSchema() {
   await q(`ALTER TABLE firearms ADD COLUMN IF NOT EXISTS nfa_type TEXT`);
   await q(`ALTER TABLE firearms ADD COLUMN IF NOT EXISTS nfa_form_type TEXT`);
   await q(`ALTER TABLE firearms ADD COLUMN IF NOT EXISTS nfa_form_number TEXT`);
+
+  // ATF Inspector token (idempotent)
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS inspector_token TEXT`);
 }
 
 // Run schema init once at startup (idempotent)
@@ -251,7 +254,13 @@ const stmts = {
     one('SELECT * FROM users WHERE email=$1 LIMIT 1', [email]),
 
   getUserById: (id) =>
-    one('SELECT id,name,email,ffl_number,shop_name,phone,plan,onboarding_done,created_at FROM users WHERE id=$1 LIMIT 1', [id]),
+    one('SELECT id,name,email,ffl_number,shop_name,phone,plan,onboarding_done,created_at,inspector_token FROM users WHERE id=$1 LIMIT 1', [id]),
+
+  setInspectorToken: (id, token) =>
+    run('UPDATE users SET inspector_token=$1 WHERE id=$2', [token, id]),
+
+  getUserByInspectorToken: (token) =>
+    one('SELECT id,name,shop_name,ffl_number FROM users WHERE inspector_token=$1 LIMIT 1', [token]),
 
   updateUser: ({ name, phone, shop_name, ffl_number, id }) =>
     run('UPDATE users SET name=$1,phone=$2,shop_name=$3,ffl_number=$4 WHERE id=$5',

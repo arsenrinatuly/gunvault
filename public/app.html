@@ -746,11 +746,28 @@
       <h3>📦 Data Backup</h3>
       <p class="desc">Download a full copy of your records. ATF regulations require you to maintain backups at a separate physical location.</p>
       <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#fbbf24;line-height:1.6">
-        ⚠️ <strong>ATF Requirement:</strong> Keep at least one backup copy stored separately from your primary device (e.g., USB drive in a safe, separate computer). Download and save regularly.
+        ⚠️ <strong>ATF Requirement:</strong> Keep at least one backup copy stored separately from your primary device (e.g., USB drive in a safe, separate computer). Download and save regularly.<br><br>
+        📋 <strong>20-Year Retention Rule:</strong> Per ATF regulations, A&amp;D bound book records must be retained for a minimum of 20 years. If you close your business or cancel your account, you must download and store your records before closing.
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button class="btn btn--red btn--sm" onclick="downloadFullBackup()">⬇ Download Full Backup</button>
         <span id="backup-last" style="font-size:12px;color:var(--muted)">No backup downloaded this session</span>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>🔍 ATF Inspection Access</h3>
+      <p class="desc">Generate a read-only link to your A&amp;D book for ATF agents during an inspection. The link shows all records but cannot be used to edit anything.</p>
+      <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#fbbf24;line-height:1.6">
+        ⚠️ Share this link <strong>only with ATF agents</strong> during an official inspection. Regenerating the link will invalidate the previous one.
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+        <button class="btn btn--red btn--sm" onclick="generateInspectorLink()">🔗 Generate ATF Inspector Link</button>
+        <button class="btn btn--sm" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)" onclick="copyInspectorLink()">📋 Copy Link</button>
+      </div>
+      <div id="inspector-link-box" style="display:none;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 14px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Read-only ATF inspection link:</div>
+        <div id="inspector-link-url" style="font-size:12px;font-family:monospace;color:#60a5fa;word-break:break-all"></div>
       </div>
     </div>
 
@@ -1408,6 +1425,26 @@ async function downloadFullBackup() {
   } catch(e) {
     toast(e.message || 'Backup failed', 'error');
   }
+}
+
+// ── ATF Inspector Link ──
+var _inspectorUrl = '';
+async function generateInspectorLink() {
+  try {
+    var data = await api('POST', '/api/app/inspector-token');
+    _inspectorUrl = data.url;
+    document.getElementById('inspector-link-url').textContent = _inspectorUrl;
+    document.getElementById('inspector-link-box').style.display = 'block';
+    toast('ATF inspector link generated');
+  } catch(e) { toast(e.message || 'Error generating link', 'error'); }
+}
+function copyInspectorLink() {
+  if (!_inspectorUrl) { toast('Generate a link first', 'error'); return; }
+  navigator.clipboard.writeText(_inspectorUrl).then(function() {
+    toast('Link copied to clipboard');
+  }).catch(function() {
+    toast('Copy manually from the box below', 'error');
+  });
 }
 
 // ── Dispose ──

@@ -588,6 +588,71 @@ app.get('/api/admin/waitlist', requireAdmin, async (req, res) => {
   catch(e) { res.status(500).json({ error: 'Server error' }); }
 });
 
+// ─── ATF Inspector Access ─────────────────────
+// Generate / regenerate a read-only inspector token
+app.post('/api/app/inspector-token', requireAuth, async (req, res) => {
+  try {
+    const token = crypto.randomBytes(24).toString('hex');
+    await stmts.setInspectorToken(req.user.id, token);
+    res.json({ token, url: `${process.env.APP_URL || 'https://gunvault.vercel.app'}/inspect/${token}` });
+  } catch(e) { res.status(500).json({ error: 'Server error' }); }
+});
+
+// Read-only ATF inspector view
+app.get('/inspect/:token', async (req, res) => {
+  try {
+    const dealer = await stmts.getUserByInspectorToken(req.params.token);
+    if (!dealer) return res.status(404).send('<h2>Invalid or expired access link.</h2>');
+    const firearms = await stmts.getFirearms(dealer.id);
+    const rows = firearms.map(f => `
+      <tr>
+        <td>${f.id}</td>
+        <td>${f.manufacturer || ''}</td>
+        <td>${f.importer || '—'}</td>
+        <td>${f.model || ''}</td>
+        <td style="font-family:monospace">${f.serial_number || ''}</td>
+        <td>${f.caliber || ''}</td>
+        <td>${f.type || ''}</td>
+        <td>${f.acquisition_date || ''}</td>
+        <td>${f.acquisition_from || ''}</td>
+        <td>${f.disposition_date || '—'}</td>
+        <td>${f.disposition_to || '—'}</td>
+        <td>${f.is_nfa ? '⚠️ NFA' : ''}</td>
+      </tr>`).join('');
+    res.send(`<!DOCTYPE html><html lang="en"><head>
+      <meta charset="UTF-8"><title>ATF Inspection — ${dealer.shop_name || dealer.name}</title>
+      <style>
+        body{font-family:Arial,sans-serif;margin:0;padding:24px;background:#f8f8f8;color:#111}
+        .header{background:#1a1a2e;color:#fff;padding:20px 24px;border-radius:8px;margin-bottom:24px}
+        .header h1{margin:0 0 4px;font-size:20px}
+        .header p{margin:0;font-size:13px;opacity:.7}
+        .badge{display:inline-block;background:#c41e3a;color:#fff;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;margin-left:8px}
+        table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+        th{background:#1a1a2e;color:#fff;padding:10px 8px;text-align:left;font-size:12px}
+        td{padding:8px;font-size:12px;border-bottom:1px solid #f0f0f0}
+        tr:last-child td{border-bottom:none}
+        .meta{font-size:12px;color:#666;margin-bottom:16px}
+        .readonly{background:#fef3c7;border:1px solid #fbbf24;padding:10px 14px;border-radius:6px;font-size:12px;margin-bottom:20px}
+      </style></head><body>
+      <div class="header">
+        <h1>A&amp;D Bound Book — Read-Only ATF Inspection View <span class="badge">READ ONLY</span></h1>
+        <p>${dealer.shop_name || dealer.name} &nbsp;|&nbsp; FFL: ${dealer.ffl_number || 'N/A'} &nbsp;|&nbsp; Generated: ${new Date().toUTCString()}</p>
+      </div>
+      <div class="readonly">⚠️ <strong>This is a read-only view generated for ATF inspection purposes.</strong> No edits can be made through this link. Powered by BoundStack.</div>
+      <p class="meta">Total records: <strong>${firearms.length}</strong> &nbsp;|&nbsp; In inventory: <strong>${firearms.filter(f=>!f.disposition_date).length}</strong> &nbsp;|&nbsp; Transferred: <strong>${firearms.filter(f=>f.disposition_date).length}</strong></p>
+      <table>
+        <thead><tr>
+          <th>Log #</th><th>Manufacturer</th><th>Importer</th><th>Model</th>
+          <th>Serial #</th><th>Caliber</th><th>Type</th>
+          <th>Acq. Date</th><th>Acquired From</th>
+          <th>Disp. Date</th><th>Disposed To</th><th>NFA</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </body></html>`);
+  } catch(e) { console.error(e); res.status(500).send('<h2>Server error</h2>'); }
+});
+
 // ─── Health ───────────────────────────────────
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
