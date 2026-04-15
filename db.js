@@ -226,7 +226,6 @@ async function initSchema() {
       created_at  TIMESTAMPTZ DEFAULT NOW()
     )
   `);
-}
 
   // NFA fields migration (idempotent)
   await q(`ALTER TABLE firearms ADD COLUMN IF NOT EXISTS is_nfa BOOLEAN DEFAULT false`);
