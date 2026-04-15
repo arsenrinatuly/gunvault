@@ -1231,6 +1231,11 @@
 (function() {
   'use strict';
 
+  /* ── Auto-redirect if already logged in ── */
+  if (localStorage.getItem('gv_token')) {
+    window.location.href = '/app';
+  }
+
   var API = ''; // same origin — server serves this file
 
   /* ── Helpers ── */
