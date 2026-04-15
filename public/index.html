@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>if (localStorage.getItem('gv_token')) { window.location.replace('/app'); }</script>
   <title>BoundStack — FFL Software That Actually Works</title>
   <meta name="description" content="Cloud-native ATF compliance, POS, and business management for FFL dealers. Free to start. No contracts. Never de-platformed." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -1230,11 +1231,6 @@
 <script>
 (function() {
   'use strict';
-
-  /* ── Auto-redirect if already logged in ── */
-  if (localStorage.getItem('gv_token')) {
-    window.location.href = '/app';
-  }
 
   var API = ''; // same origin — server serves this file
 
