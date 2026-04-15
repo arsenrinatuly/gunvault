@@ -18,7 +18,7 @@ app.set('trust proxy', 1);
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://gunvault.vercel.app',
+  'https://BoundStack.vercel.app',
   process.env.APP_URL,
 ].filter(Boolean);
 
@@ -603,7 +603,7 @@ app.get('*',               (req, res) => res.sendFile(path.join(__dirname, 'publ
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`\n  GunVault running -> http://localhost:${PORT}`);
+    console.log(`\n  BoundStack running -> http://localhost:${PORT}`);
     console.log(`  Admin CRM     -> http://localhost:${PORT}/admin  (pw: ${ADMIN_PASS})\n`);
   });
 }
