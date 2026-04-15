@@ -228,6 +228,13 @@ async function initSchema() {
   `);
 }
 
+  // NFA fields migration (idempotent)
+  await q(`ALTER TABLE firearms ADD COLUMN IF NOT EXISTS is_nfa BOOLEAN DEFAULT false`);
+  await q(`ALTER TABLE firearms ADD COLUMN IF NOT EXISTS nfa_type TEXT`);
+  await q(`ALTER TABLE firearms ADD COLUMN IF NOT EXISTS nfa_form_type TEXT`);
+  await q(`ALTER TABLE firearms ADD COLUMN IF NOT EXISTS nfa_form_number TEXT`);
+}
+
 // Run schema init once at startup (idempotent)
 const ready = initSchema().catch(e => console.error('Schema init error:', e.message));
 
@@ -296,13 +303,13 @@ const stmts = {
     run('UPDATE locations SET is_primary=1 WHERE id=$1 AND user_id=$2', [id, user_id]),
 
   // ── Firearms ──────────────────────────────
-  addFirearm: ({ user_id, location_id, manufacturer, importer, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes }) =>
-    one('INSERT INTO firearms (user_id,location_id,manufacturer,importer,model,serial_number,caliber,type,acquisition_date,acquisition_from,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id',
-      [user_id, location_id || null, manufacturer, importer || null, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes || null]),
+  addFirearm: ({ user_id, location_id, manufacturer, importer, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes, is_nfa, nfa_type, nfa_form_type, nfa_form_number }) =>
+    one('INSERT INTO firearms (user_id,location_id,manufacturer,importer,model,serial_number,caliber,type,acquisition_date,acquisition_from,notes,is_nfa,nfa_type,nfa_form_type,nfa_form_number) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id',
+      [user_id, location_id || null, manufacturer, importer || null, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes || null, is_nfa || false, nfa_type || null, nfa_form_type || null, nfa_form_number || null]),
 
-  updateFirearm: ({ manufacturer, importer, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes, id, user_id }) =>
-    run('UPDATE firearms SET manufacturer=$1,importer=$2,model=$3,serial_number=$4,caliber=$5,type=$6,acquisition_date=$7,acquisition_from=$8,notes=$9 WHERE id=$10 AND user_id=$11',
-      [manufacturer, importer || null, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes || null, id, user_id]),
+  updateFirearm: ({ manufacturer, importer, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes, is_nfa, nfa_type, nfa_form_type, nfa_form_number, id, user_id }) =>
+    run('UPDATE firearms SET manufacturer=$1,importer=$2,model=$3,serial_number=$4,caliber=$5,type=$6,acquisition_date=$7,acquisition_from=$8,notes=$9,is_nfa=$10,nfa_type=$11,nfa_form_type=$12,nfa_form_number=$13 WHERE id=$14 AND user_id=$15',
+      [manufacturer, importer || null, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes || null, is_nfa || false, nfa_type || null, nfa_form_type || null, nfa_form_number || null, id, user_id]),
 
   getFirearms: (user_id) =>
     all('SELECT f.*,l.name as location_name FROM firearms f LEFT JOIN locations l ON f.location_id=l.id WHERE f.user_id=$1 ORDER BY f.acquisition_date DESC', [user_id]),

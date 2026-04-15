@@ -276,7 +276,7 @@ app.get('/api/app/firearms', requireAuth, async (req, res) => {
 
 app.post('/api/app/firearms', requireAuth, async (req, res) => {
   try {
-    const { manufacturer, importer, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes, location_id } = req.body;
+    const { manufacturer, importer, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes, location_id, is_nfa, nfa_type, nfa_form_type, nfa_form_number } = req.body;
     if (!ok(manufacturer)||!ok(model)||!ok(serial_number)||!ok(caliber)||!ok(type)||!ok(acquisition_date)||!ok(acquisition_from))
       return res.status(400).json({ error: 'All required fields must be filled' });
     // Free plan: max 50 total firearms
@@ -285,7 +285,7 @@ app.post('/api/app/firearms', requireAuth, async (req, res) => {
       const cnt = await stmts.countFirearms(req.user.id);
       if (cnt && cnt.total >= 50) return res.status(403).json({ error: 'Free plan limit reached (50 firearms). Upgrade to add more.', limit: true });
     }
-    const r = await stmts.addFirearm({ user_id: req.user.id, location_id: location_id || null, manufacturer, importer: importer || null, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes: notes || null });
+    const r = await stmts.addFirearm({ user_id: req.user.id, location_id: location_id || null, manufacturer, importer: importer || null, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes: notes || null, is_nfa: !!is_nfa, nfa_type: nfa_type || null, nfa_form_type: nfa_form_type || null, nfa_form_number: nfa_form_number || null });
     audit(req, 'firearms', r.id, 'ADD', null, { manufacturer, model, serial_number, caliber, type, acquisition_date });
     res.status(201).json({ message: 'Firearm added', id: r.id });
   } catch(e) {
@@ -317,13 +317,13 @@ app.post('/api/app/firearms/import', requireAuth, async (req, res) => {
 
 app.patch('/api/app/firearms/:id', requireAuth, async (req, res) => {
   try {
-    const { manufacturer, importer, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes } = req.body;
+    const { manufacturer, importer, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes, is_nfa, nfa_type, nfa_form_type, nfa_form_number } = req.body;
     if (!ok(manufacturer)||!ok(model)||!ok(serial_number)||!ok(caliber)||!ok(type)||!ok(acquisition_date)||!ok(acquisition_from))
       return res.status(400).json({ error: 'All required fields must be filled' });
     const old = await stmts.getFirearm(req.params.id, req.user.id);
     if (!old) return res.status(404).json({ error: 'Firearm not found' });
     if (old.disposition_date) return res.status(400).json({ error: 'Cannot edit a disposed firearm' });
-    await stmts.updateFirearm({ manufacturer, importer: importer || null, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes: notes || null, id: req.params.id, user_id: req.user.id });
+    await stmts.updateFirearm({ manufacturer, importer: importer || null, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes: notes || null, is_nfa: !!is_nfa, nfa_type: nfa_type || null, nfa_form_type: nfa_form_type || null, nfa_form_number: nfa_form_number || null, id: req.params.id, user_id: req.user.id });
     audit(req, 'firearms', parseInt(req.params.id), 'UPDATE', old, { manufacturer, model, serial_number });
     res.json({ message: 'Firearm updated' });
   } catch(e) {
@@ -592,6 +592,37 @@ app.get('/api/admin/waitlist', requireAdmin, async (req, res) => {
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
 // ─── Pages ────────────────────────────────────
+// ── Full Backup ──────────────────────────────
+app.get('/api/app/backup', requireAuth, async (req, res) => {
+  try {
+    const [firearms, customers, sales, forms] = await Promise.all([
+      stmts.getFirearms(req.user.id),
+      stmts.getCustomers(req.user.id),
+      stmts.getSales(req.user.id),
+      stmts.getForms(req.user.id),
+    ]);
+    const toCSV = (rows, cols) => {
+      if (!rows.length) return cols.join(',') + '\n';
+      return cols.join(',') + '\n' + rows.map(r => cols.map(c => {
+        const v = r[c] == null ? '' : String(r[c]);
+        return v.includes(',') || v.includes('"') || v.includes('\n') ? '"' + v.replace(/"/g,'""') + '"' : v;
+      }).join(',')).join('\n');
+    };
+    const fCols = ['id','manufacturer','importer','model','serial_number','caliber','type','acquisition_date','acquisition_from','disposition_date','disposition_to','is_nfa','nfa_type','nfa_form_type','nfa_form_number','notes'];
+    const cCols = ['id','first_name','last_name','email','phone','address','id_type','id_number','dob','notes'];
+    const sCols = ['id','sale_date','amount','payment_method','customer_id','firearm_id','notes'];
+    const f4Cols = ['id','transferee_name','transferee_address','nics_transaction','nics_result','transfer_date','status'];
+    const backup = {
+      exported_at: new Date().toISOString(),
+      firearms_csv: toCSV(firearms, fCols),
+      customers_csv: toCSV(customers, cCols),
+      sales_csv: toCSV(sales, sCols),
+      forms_4473_csv: toCSV(forms, f4Cols),
+    };
+    res.json(backup);
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
 app.get('/app',            (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));
 app.get('/admin',          (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reset-password.html')));

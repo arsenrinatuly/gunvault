@@ -449,6 +449,7 @@
             <button class="filter-tab active" onclick="setADFilter('all',this)">All</button>
             <button class="filter-tab" onclick="setADFilter('stock',this)">In Stock</button>
             <button class="filter-tab" onclick="setADFilter('transferred',this)">Transferred</button>
+            <button class="filter-tab" onclick="setADFilter('nfa',this)">⚠️ NFA</button>
           </div>
           <input class="search-input" placeholder="Search serial, model…" id="adbook-search" oninput="renderFirearms()" />
         </div>
@@ -499,7 +500,10 @@
   <!-- FORM 4473 -->
   <div class="page" id="page-form4473">
     <div class="page-header">
-      <div><h2>Form 4473</h2><p>ATF Firearms Transaction Record — digital filing</p></div>
+      <div>
+        <h2>4473 Draft Tool</h2>
+        <p>Reference aid for ATF Form 4473 — not an ATF-approved electronic filing system. Always maintain official paper forms.</p>
+      </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn--ghost btn--sm" onclick="open4473New()">+ New Form</button>
       </div>
@@ -738,6 +742,18 @@
       <button class="btn btn--ghost btn--sm" onclick="openLocationModal()">+ Add Location</button>
     </div>
 
+    <div class="settings-section">
+      <h3>📦 Data Backup</h3>
+      <p class="desc">Download a full copy of your records. ATF regulations require you to maintain backups at a separate physical location.</p>
+      <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#fbbf24;line-height:1.6">
+        ⚠️ <strong>ATF Requirement:</strong> Keep at least one backup copy stored separately from your primary device (e.g., USB drive in a safe, separate computer). Download and save regularly.
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn--red btn--sm" onclick="downloadFullBackup()">⬇ Download Full Backup</button>
+        <span id="backup-last" style="font-size:12px;color:var(--muted)">No backup downloaded this session</span>
+      </div>
+    </div>
+
     <div class="settings-section danger-zone">
       <h3>Danger Zone</h3>
       <p class="desc">These actions are permanent and cannot be undone</p>
@@ -790,6 +806,13 @@
           <option>Shotgun</option>
           <option>Receiver/Frame</option>
           <option>Other</option>
+          <option disabled>── NFA Items ──</option>
+          <option>Suppressor</option>
+          <option>Machine Gun</option>
+          <option>Short-Barreled Rifle (SBR)</option>
+          <option>Short-Barreled Shotgun (SBS)</option>
+          <option>Any Other Weapon (AOW)</option>
+          <option>Destructive Device</option>
         </select>
       </div>
     </div>
@@ -807,6 +830,32 @@
       <label>Notes</label>
       <input type="text" id="fm-notes" placeholder="Condition, additional info…" />
     </div>
+
+    <!-- NFA Section -->
+    <div id="nfa-section" style="background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:16px;margin-top:8px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <input type="checkbox" id="fm-is-nfa" onchange="toggleNFAFields()" style="width:16px;height:16px;accent-color:var(--red)" />
+        <label for="fm-is-nfa" style="font-size:13px;font-weight:700;color:#fbbf24;text-transform:none;letter-spacing:0;cursor:pointer">⚠️ NFA Item (SOT/Form 3, 4, or 5 transfer)</label>
+      </div>
+      <div id="nfa-fields" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label>NFA Transfer Form</label>
+            <select id="fm-nfa-form-type">
+              <option value="">Select…</option>
+              <option>Form 3 (Dealer to Dealer)</option>
+              <option>Form 4 (Civilian Transfer)</option>
+              <option>Form 5 (Tax-Exempt Transfer)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>ATF Control Number</label>
+            <input type="text" id="fm-nfa-form-number" placeholder="ATF form/control number" />
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn btn--ghost" onclick="closeFirearmModal()">Cancel</button>
       <button class="btn btn--red" id="firearmSubmitBtn" onclick="submitFirearm()">Add to A&amp;D Book</button>
@@ -1196,11 +1245,17 @@ function setADFilter(mode, btn) {
   renderFirearms();
 }
 
+function toggleNFAFields() {
+  var checked = document.getElementById('fm-is-nfa').checked;
+  document.getElementById('nfa-fields').style.display = checked ? 'block' : 'none';
+}
+
 function renderFirearms() {
   var q = ((document.getElementById('adbook-search') || {}).value || '').toLowerCase();
   var list = allFirearms.filter(function(f) {
     if (adFilterMode === 'stock' && f.disposition_date) return false;
     if (adFilterMode === 'transferred' && !f.disposition_date) return false;
+    if (adFilterMode === 'nfa' && !f.is_nfa) return false;
     if (!q) return true;
     return (f.manufacturer + f.model + f.serial_number + f.caliber + f.type + (f.acquisition_from||'') + (f.disposition_to||'')).toLowerCase().includes(q);
   });
@@ -1231,7 +1286,7 @@ function renderFirearms() {
       '<td>' + esc(f.model) + '</td>' +
       '<td class="td-mono">' + esc(f.serial_number) + '</td>' +
       '<td>' + esc(f.caliber) + '</td>' +
-      '<td>' + esc(f.type) + '</td>' +
+      '<td>' + esc(f.type) + (f.is_nfa ? ' <span style="font-size:10px;background:#fbbf24;color:#000;border-radius:4px;padding:1px 5px;font-weight:700">NFA</span>' : '') + '</td>' +
       '<td style="color:var(--dim);white-space:nowrap">' + fmtDate(f.acquisition_date) + '</td>' +
       '<td>' + esc(f.acquisition_from) + '</td>' +
       '<td style="color:var(--dim);white-space:nowrap">' + (f.disposition_date ? fmtDate(f.disposition_date) : '—') + '</td>' +
@@ -1267,17 +1322,31 @@ function openEditFirearmModal(id) {
   document.getElementById('fm-acqdate').value = f.acquisition_date || '';
   document.getElementById('fm-acqfrom').value = f.acquisition_from || '';
   document.getElementById('fm-notes').value   = f.notes || '';
+  // NFA fields
+  var isNfa = !!f.is_nfa;
+  document.getElementById('fm-is-nfa').checked = isNfa;
+  document.getElementById('nfa-fields').style.display = isNfa ? 'block' : 'none';
+  if (isNfa) {
+    document.getElementById('fm-nfa-form-type').value   = f.nfa_form_type || '';
+    document.getElementById('fm-nfa-form-number').value = f.nfa_form_number || '';
+  }
   document.getElementById('firearmModal').classList.add('open');
 }
 
 function closeFirearmModal() {
   document.getElementById('firearmModal').classList.remove('open');
   editingFirearmId = null;
+  clearFirearmForm();
 }
 
 function clearFirearmForm() {
   ['fm-mfr','fm-imp','fm-model','fm-serial','fm-caliber','fm-acqdate','fm-acqfrom','fm-notes'].forEach(function(id){ document.getElementById(id).value = ''; });
   document.getElementById('fm-type').value = '';
+  // Reset NFA fields
+  document.getElementById('fm-is-nfa').checked = false;
+  document.getElementById('nfa-fields').style.display = 'none';
+  document.getElementById('fm-nfa-form-type').value   = '';
+  document.getElementById('fm-nfa-form-number').value = '';
 }
 
 async function submitFirearm() {
@@ -1293,6 +1362,11 @@ async function submitFirearm() {
   for (var k in v) { if (!v[k]) { toast('Please fill in all required fields', 'error'); return; } }
   v.importer = document.getElementById('fm-imp').value.trim() || null;
   v.notes    = document.getElementById('fm-notes').value.trim() || null;
+  // NFA fields
+  var isNfa = document.getElementById('fm-is-nfa').checked;
+  v.is_nfa         = isNfa;
+  v.nfa_form_type  = isNfa ? (document.getElementById('fm-nfa-form-type').value || null) : null;
+  v.nfa_form_number= isNfa ? (document.getElementById('fm-nfa-form-number').value.trim() || null) : null;
   try {
     if (editingFirearmId) {
       await api('PATCH', '/api/app/firearms/' + editingFirearmId, v);
@@ -1307,6 +1381,32 @@ async function submitFirearm() {
   } catch(e) {
     if (e.message && e.message.includes('limit')) { closeFirearmModal(); showUpgradeModal(e.message); }
     else toast(e.message, 'error');
+  }
+}
+
+// ── Backup ──
+async function downloadFullBackup() {
+  try {
+    var data = await api('GET', '/api/app/backup');
+    var ts = data.exported_at ? data.exported_at.replace(/[:.]/g, '-').slice(0,19) : 'backup';
+    function dl(filename, content) {
+      var blob = new Blob([content], { type: 'text/csv' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+    dl('firearms_' + ts + '.csv',   data.firearms_csv   || '');
+    dl('customers_' + ts + '.csv',  data.customers_csv  || '');
+    dl('sales_' + ts + '.csv',      data.sales_csv      || '');
+    dl('forms4473_' + ts + '.csv',  data.forms_4473_csv || '');
+    var el = document.getElementById('backup-last');
+    if (el) el.textContent = 'Last backup: ' + new Date().toLocaleString();
+    toast('Backup downloaded — 4 CSV files');
+  } catch(e) {
+    toast(e.message || 'Backup failed', 'error');
   }
 }
 
