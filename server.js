@@ -18,7 +18,9 @@ app.set('trust proxy', 1);
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://BoundStack.vercel.app',
+  'https://boundstack.vercel.app',
+  'https://www.boundstack.org',
+  'https://boundstack.org',
   process.env.APP_URL,
 ].filter(Boolean);
 
