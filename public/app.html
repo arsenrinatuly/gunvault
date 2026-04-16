@@ -230,7 +230,7 @@
     .f4473-status-bar{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
     .f4473-status-bar span{font-size:13px;color:var(--muted);}
     .f4473-status-bar strong{color:var(--white);}
-    @media(max-width:768px){.f4473-grid{grid-template-columns:1fr 1fr;}.f4473-grid-2{grid-template-columns:1fr;}}
+    @media(max-width:768px){.f4473-grid{grid-template-columns:1fr;}.f4473-grid-2{grid-template-columns:1fr;}}
 
     /* ── Toast ── */
     .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 10px; }
@@ -385,10 +385,12 @@
         <h3>Recent A&amp;D Entries</h3>
         <button class="btn btn--ghost btn--sm" onclick="showPage('adbook')">View all →</button>
       </div>
-      <table>
-        <thead><tr><th>Log #</th><th>Manufacturer</th><th>Model</th><th>Serial</th><th>Type</th><th>Acquired</th><th>Status</th></tr></thead>
-        <tbody id="recent-tbody"><tr><td colspan="7"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
-      </table>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Log #</th><th>Manufacturer</th><th>Model</th><th>Serial</th><th>Type</th><th>Acquired</th><th>Status</th></tr></thead>
+          <tbody id="recent-tbody"><tr><td colspan="7"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -488,12 +490,14 @@
         <h3 id="customers-count">Customers</h3>
         <input class="search-input" placeholder="Search by name or email…" oninput="filterCustomers(this.value)" />
       </div>
-      <table>
-        <thead>
-          <tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>ID Type</th><th>DOB</th><th>Address</th><th>Added</th><th>Actions</th></tr>
-        </thead>
-        <tbody id="customers-tbody"><tr><td colspan="9"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
-      </table>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>ID Type</th><th>DOB</th><th>Address</th><th>Added</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="customers-tbody"><tr><td colspan="9"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
+        </table>
+      </div>
     </div>
   </div>
 

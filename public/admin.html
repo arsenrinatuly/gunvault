@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GunVault — Admin CRM</title>
+  <title>BoundStack — Admin CRM</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -242,6 +242,47 @@
 
     @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 900px)  { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ── Mobile header ── */
+    .mobile-header {
+      display: none; position: fixed; top: 0; left: 0; right: 0; height: 56px;
+      background: #1e293b; border-bottom: 1px solid #334155;
+      align-items: center; justify-content: space-between; padding: 0 16px; z-index: 150;
+    }
+    .mobile-header-logo { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .mobile-hamburger {
+      background: none; border: none; color: #e2e8f0; cursor: pointer;
+      padding: 4px; display: flex; flex-direction: column; gap: 5px;
+    }
+    .mobile-hamburger span { display: block; width: 22px; height: 2px; background: currentColor; border-radius: 2px; }
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 90;
+    }
+
+    /* ── Mobile breakpoint ── */
+    @media (max-width: 768px) {
+      .mobile-header { display: flex; }
+      .sidebar {
+        transform: translateX(-100%); transition: transform .25s ease;
+        z-index: 120;
+      }
+      .sidebar.open { transform: translateX(0); box-shadow: 4px 0 28px rgba(0,0,0,.5); }
+      .sidebar-overlay.open { display: block; }
+      .main { margin-left: 0; padding-top: 56px; }
+      .page { padding: 20px 16px; }
+      #page-crm { padding: 16px; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .page-header { flex-direction: column; }
+      .table-toolbar { flex-direction: column; align-items: flex-start; }
+      .search-input { width: 100%; }
+      .form-row { grid-template-columns: 1fr; }
+      .info-grid { grid-template-columns: 1fr; }
+      .toast-container { bottom: 16px; right: 12px; left: 12px; }
+      .toast { font-size: 12px; }
+    }
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -250,7 +291,7 @@
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
     <div style="font-size:32px;margin-bottom:12px">🔐</div>
-    <h1>GunVault Admin</h1>
+    <h1>BoundStack Admin</h1>
     <p>Enter your admin password to continue</p>
     <p class="login-error" id="loginError">Wrong password. Try again.</p>
     <input class="field" type="password" id="adminPassInput" placeholder="Admin password" />
@@ -260,8 +301,17 @@
 
 <!-- MAIN APP -->
 <div class="app" id="app">
-  <div class="sidebar">
-    <div class="sidebar-logo"><span>🛡</span> GunVault</div>
+  <!-- Mobile header -->
+  <div class="mobile-header">
+    <div class="mobile-header-logo"><span style="font-size:18px">🛡</span> BoundStack</div>
+    <button class="mobile-hamburger" onclick="toggleAdminSidebar()" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleAdminSidebar()"></div>
+
+  <div class="sidebar" id="adminSidebar">
+    <div class="sidebar-logo"><span>🛡</span> BoundStack</div>
 
     <div class="nav-section">Overview</div>
     <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">📊 Dashboard</div>
@@ -573,6 +623,13 @@ document.getElementById('adminPassInput').addEventListener('keydown', function(e
   if (e.key === 'Enter') doLogin();
 });
 
+function toggleAdminSidebar() {
+  var sidebar = document.getElementById('adminSidebar');
+  var overlay = document.getElementById('sidebarOverlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('open');
+}
+
 function doLogin() {
   var pass = document.getElementById('adminPassInput').value;
   if (!pass) return;
@@ -614,6 +671,13 @@ function showPage(name) {
   if (name === 'users')    loadUsers();
   if (name === 'demos')    loadDemos();
   if (name === 'waitlist') loadWaitlist();
+  // Close sidebar on mobile after nav
+  var sidebar = document.getElementById('adminSidebar');
+  var overlay = document.getElementById('sidebarOverlay');
+  if (sidebar && sidebar.classList.contains('open')) {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+  }
 }
 
 // ────────────────────────────────────────────
