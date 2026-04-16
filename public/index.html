@@ -298,8 +298,12 @@
     /* ============================================================
        COMPARE TABLE
        ============================================================ */
-    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius); box-shadow: var(--shadow-m); }
-    .cmp { width: 100%; border-collapse: collapse; min-width: 560px; }
+    .table-scroll {
+      display: block; width: 100%;
+      overflow-x: scroll; -webkit-overflow-scrolling: touch;
+      border-radius: var(--radius); box-shadow: var(--shadow-m);
+    }
+    .cmp { border-collapse: collapse; min-width: 560px; width: max-content; table-layout: auto; }
     .cmp thead { background: var(--c-navy); }
     .cmp th {
       padding: 12px 14px; text-align: left;
@@ -312,15 +316,7 @@
       border-bottom: 1px solid var(--c-border-l); background: #fff;
       white-space: nowrap;
     }
-    /* Sticky first column so feature name stays visible while scrolling */
-    .cmp th:first-child,
-    .cmp td:first-child {
-      position: sticky; left: 0; z-index: 2;
-      font-weight: 600; color: var(--c-text);
-    }
-    .cmp thead th:first-child { background: var(--c-navy); }
-    .cmp tbody td:first-child  { background: #fff; }
-    .cmp tbody tr:nth-child(even) td:first-child { background: #fafafa; }
+    .cmp td:first-child { font-weight: 600; color: var(--c-text); }
     .cmp td.cmp--hl { background: rgba(196,30,58,.03); font-weight: 700; }
     .cmp tr:last-child td { border-bottom: none; }
     .t-yes { color: var(--c-green); font-weight: 700; }
@@ -608,9 +604,8 @@
     [data-theme="dark"] .cmp th { background:#0f172a; color:#f1f5f9; }
     [data-theme="dark"] .cmp thead th:first-child { background:#0f172a; }
     [data-theme="dark"] .cmp td { background:#1e293b; color:#e2e8f0; border-color:#334155; }
-    [data-theme="dark"] .cmp td:first-child { color:#f1f5f9; background:#1e293b; }
+    [data-theme="dark"] .cmp td:first-child { color:#f1f5f9; }
     [data-theme="dark"] .cmp tbody tr:nth-child(even) td { background:#172033; }
-    [data-theme="dark"] .cmp tbody tr:nth-child(even) td:first-child { background:#172033; }
     [data-theme="dark"] .cmp td.cmp--hl { background:rgba(196,30,58,.18) !important; }
     [data-theme="dark"] .cmp th.cmp--hl { background:rgba(196,30,58,.35); }
 
