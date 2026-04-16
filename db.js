@@ -235,6 +235,30 @@ async function initSchema() {
 
   // ATF Inspector token (idempotent)
   await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS inspector_token TEXT`);
+
+  // NICS checked_at column (idempotent)
+  await q(`ALTER TABLE form_4473 ADD COLUMN IF NOT EXISTS nics_checked_at TEXT`);
+
+  // Gunsmithing work orders
+  await q(`
+    CREATE TABLE IF NOT EXISTS work_orders (
+      id                  SERIAL PRIMARY KEY,
+      user_id             INTEGER       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      customer_id         INTEGER       REFERENCES customers(id),
+      firearm_manufacturer TEXT,
+      firearm_model       TEXT,
+      firearm_serial      TEXT,
+      description         TEXT          NOT NULL,
+      status              TEXT          DEFAULT 'received',
+      estimated_price     NUMERIC(10,2),
+      actual_price        NUMERIC(10,2),
+      received_date       TEXT          NOT NULL,
+      promised_date       TEXT,
+      completed_date      TEXT,
+      notes               TEXT,
+      created_at          TIMESTAMPTZ   DEFAULT NOW()
+    )
+  `);
 }
 
 // Run schema init once at startup (idempotent)
@@ -476,6 +500,45 @@ const stmts = {
 
   countSales: (user_id) =>
     one('SELECT COUNT(*)::int AS total, COALESCE(SUM(amount),0)::numeric AS revenue FROM sales WHERE user_id=$1', [user_id]),
+
+  // ── Forms (backup helper) ──────────────────
+  getForms: (user_id) =>
+    all('SELECT * FROM form_4473 WHERE user_id=$1 ORDER BY created_at DESC', [user_id]),
+
+  // ── Work Orders ───────────────────────────
+  addWorkOrder: ({ user_id, customer_id, firearm_manufacturer, firearm_model, firearm_serial, description, status, estimated_price, actual_price, received_date, promised_date, completed_date, notes }) =>
+    one(
+      `INSERT INTO work_orders
+       (user_id,customer_id,firearm_manufacturer,firearm_model,firearm_serial,description,status,
+        estimated_price,actual_price,received_date,promised_date,completed_date,notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
+      [user_id, customer_id || null, firearm_manufacturer || null, firearm_model || null,
+       firearm_serial || null, description, status || 'received',
+       estimated_price || null, actual_price || null, received_date,
+       promised_date || null, completed_date || null, notes || null]),
+
+  getWorkOrders: (user_id) =>
+    all(
+      `SELECT wo.*, c.first_name, c.last_name
+       FROM work_orders wo
+       LEFT JOIN customers c ON wo.customer_id = c.id
+       WHERE wo.user_id=$1
+       ORDER BY wo.created_at DESC`,
+      [user_id]),
+
+  getWorkOrder: (id, user_id) =>
+    one('SELECT * FROM work_orders WHERE id=$1 AND user_id=$2', [id, user_id]),
+
+  updateWorkOrder: ({ status, actual_price, promised_date, completed_date, notes, id, user_id }) =>
+    run(
+      `UPDATE work_orders
+       SET status=$1, actual_price=$2, promised_date=$3, completed_date=$4, notes=$5
+       WHERE id=$6 AND user_id=$7`,
+      [status || null, actual_price || null, promised_date || null,
+       completed_date || null, notes || null, id, user_id]),
+
+  deleteWorkOrder: (id, user_id) =>
+    run('DELETE FROM work_orders WHERE id=$1 AND user_id=$2', [id, user_id]),
 };
 
 // ─────────────────────────────────────────────

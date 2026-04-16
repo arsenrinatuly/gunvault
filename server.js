@@ -472,6 +472,252 @@ app.delete('/api/app/sales/:id', requireAuth, async (req, res) => {
   catch(e) { res.status(500).json({ error: 'Server error' }); }
 });
 
+// ── Work Orders (Gunsmithing) ─────────────────
+app.get('/api/app/work-orders', requireAuth, async (req, res) => {
+  try {
+    res.json({ work_orders: await stmts.getWorkOrders(req.user.id) });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+app.post('/api/app/work-orders', requireAuth, async (req, res) => {
+  try {
+    const { customer_id, firearm_manufacturer, firearm_model, firearm_serial,
+            description, status, estimated_price, actual_price,
+            received_date, promised_date, completed_date, notes } = req.body;
+    if (!ok(description))    return res.status(400).json({ error: 'Description required' });
+    if (!ok(received_date))  return res.status(400).json({ error: 'Received date required' });
+    const r = await stmts.addWorkOrder({
+      user_id: req.user.id,
+      customer_id: customer_id || null,
+      firearm_manufacturer: firearm_manufacturer || null,
+      firearm_model: firearm_model || null,
+      firearm_serial: firearm_serial || null,
+      description,
+      status: status || 'received',
+      estimated_price: estimated_price || null,
+      actual_price: actual_price || null,
+      received_date,
+      promised_date: promised_date || null,
+      completed_date: completed_date || null,
+      notes: notes || null,
+    });
+    audit(req, 'work_orders', r.id, 'CREATE', null, { description, received_date });
+    res.status(201).json({ message: 'Work order created', id: r.id });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+app.patch('/api/app/work-orders/:id', requireAuth, async (req, res) => {
+  try {
+    const { status, actual_price, promised_date, completed_date, notes } = req.body;
+    const old = await stmts.getWorkOrder(req.params.id, req.user.id);
+    if (!old) return res.status(404).json({ error: 'Work order not found' });
+    await stmts.updateWorkOrder({
+      status: status || old.status,
+      actual_price: actual_price !== undefined ? actual_price : old.actual_price,
+      promised_date: promised_date !== undefined ? promised_date : old.promised_date,
+      completed_date: completed_date !== undefined ? completed_date : old.completed_date,
+      notes: notes !== undefined ? notes : old.notes,
+      id: req.params.id,
+      user_id: req.user.id,
+    });
+    audit(req, 'work_orders', parseInt(req.params.id), 'UPDATE', old, { status, actual_price });
+    res.json({ message: 'Work order updated' });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+app.delete('/api/app/work-orders/:id', requireAuth, async (req, res) => {
+  try {
+    const old = await stmts.getWorkOrder(req.params.id, req.user.id);
+    if (!old) return res.status(404).json({ error: 'Work order not found' });
+    audit(req, 'work_orders', parseInt(req.params.id), 'DELETE', old, null);
+    await stmts.deleteWorkOrder(req.params.id, req.user.id);
+    res.json({ message: 'Deleted' });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Inventory Alerts ──────────────────────────
+app.get('/api/app/inventory-alerts', requireAuth, async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const [slow_movers, high_value_disposed, recent_acquisitions] = await Promise.all([
+      all(
+        `SELECT id, manufacturer, model, serial_number, caliber, type, acquisition_date, notes
+         FROM firearms
+         WHERE user_id=$1
+           AND disposition_date IS NULL
+           AND acquisition_date IS NOT NULL
+           AND acquisition_date != ''
+           AND acquisition_date::date <= NOW() - INTERVAL '90 days'
+         ORDER BY acquisition_date ASC`,
+        [uid]
+      ),
+      all(
+        `SELECT id, manufacturer, model, serial_number, disposition_date, disposition_to
+         FROM firearms
+         WHERE user_id=$1
+           AND disposition_date IS NOT NULL
+           AND disposition_date != ''
+           AND disposition_date::date >= NOW() - INTERVAL '30 days'
+         ORDER BY disposition_date DESC`,
+        [uid]
+      ),
+      all(
+        `SELECT id, manufacturer, model, serial_number, caliber, type, acquisition_date
+         FROM firearms
+         WHERE user_id=$1
+           AND acquisition_date IS NOT NULL
+           AND acquisition_date != ''
+           AND acquisition_date::date >= NOW() - INTERVAL '7 days'
+         ORDER BY acquisition_date DESC`,
+        [uid]
+      ),
+    ]);
+    res.json({
+      slow_movers,
+      recent_count:  recent_acquisitions.length,
+      disposed_30d:  high_value_disposed.length,
+    });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── NICS Status Update ────────────────────────
+app.patch('/api/app/form4473/:id/nics', requireAuth, async (req, res) => {
+  try {
+    const { nics_transaction, nics_result, nics_checked_at } = req.body;
+    const form = await stmts.get4473(req.params.id, req.user.id);
+    if (!form) return res.status(404).json({ error: 'Form not found' });
+    await run(
+      `UPDATE form_4473
+       SET nics_transaction=$1, nics_result=$2, nics_checked_at=$3
+       WHERE id=$4 AND user_id=$5`,
+      [nics_transaction || form.nics_transaction,
+       nics_result      || form.nics_result,
+       nics_checked_at  || null,
+       req.params.id, req.user.id]
+    );
+    audit(req, 'form_4473', parseInt(req.params.id), 'NICS_UPDATE', null,
+      { nics_transaction, nics_result, nics_checked_at });
+    res.json({ message: 'NICS status updated' });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── AI Compliance Checker ─────────────────────
+app.post('/api/app/compliance-check', requireAuth, async (req, res) => {
+  try {
+    const { type } = req.body;
+    if (!['adbook', '4473', 'full'].includes(type))
+      return res.status(400).json({ error: 'type must be adbook, 4473, or full' });
+
+    const uid = req.user.id;
+    let dataForAI = {};
+
+    if (type === 'adbook' || type === 'full') {
+      dataForAI.firearms = await stmts.getFirearms(uid);
+    }
+    if (type === '4473' || type === 'full') {
+      dataForAI.forms_4473 = await stmts.get4473s(uid);
+    }
+
+    const recordCount = (dataForAI.firearms?.length || 0) + (dataForAI.forms_4473?.length || 0);
+    if (recordCount === 0)
+      return res.json({ issues: [], summary: 'No records found to check.' });
+
+    // Build prompt
+    let prompt = `You are an ATF compliance expert reviewing FFL dealer records. Analyze the following data for ATF compliance issues.\n\n`;
+
+    if (dataForAI.firearms?.length) {
+      prompt += `A&D BOUND BOOK RECORDS (${dataForAI.firearms.length} firearms):\n`;
+      prompt += JSON.stringify(dataForAI.firearms.map(f => ({
+        id: f.id,
+        manufacturer: f.manufacturer,
+        importer: f.importer,
+        model: f.model,
+        serial_number: f.serial_number,
+        caliber: f.caliber,
+        type: f.type,
+        acquisition_date: f.acquisition_date,
+        acquisition_from: f.acquisition_from,
+        disposition_date: f.disposition_date,
+        disposition_to: f.disposition_to,
+        is_nfa: f.is_nfa,
+        nfa_type: f.nfa_type,
+      })), null, 2);
+      prompt += '\n\n';
+    }
+
+    if (dataForAI.forms_4473?.length) {
+      prompt += `FORM 4473 RECORDS (${dataForAI.forms_4473.length} forms):\n`;
+      prompt += JSON.stringify(dataForAI.forms_4473.map(f => ({
+        id: f.id,
+        transferee_name: f.transferee_name,
+        transferee_dob: f.transferee_dob,
+        transferee_id_type: f.transferee_id_type,
+        transferee_id_num: f.transferee_id_num,
+        is_felon: f.is_felon,
+        is_fugitive: f.is_fugitive,
+        is_drug_user: f.is_drug_user,
+        is_mental_health: f.is_mental_health,
+        is_domestic_violence: f.is_domestic_violence,
+        nics_transaction: f.nics_transaction,
+        nics_result: f.nics_result,
+        transfer_date: f.transfer_date,
+        firearm_serial: f.serial_number,
+        status: f.status,
+      })), null, 2);
+      prompt += '\n\n';
+    }
+
+    prompt += `Check for these issues:
+1. Missing required fields (manufacturer, model, serial number, caliber, type, acquisition date/from, disposition info)
+2. Suspicious or invalid serial numbers (all zeros, too short, all same digit)
+3. Date order issues (disposition before acquisition, future acquisition dates)
+4. Disposition recorded without a corresponding acquisition
+5. Form 4473 missing transferee name, DOB, or ID information
+6. Form 4473 with prohibited-person flags (felon, fugitive, etc.) that still show completed transfer
+7. Missing NICS transaction numbers for completed transfers
+8. NFA items missing required form information
+
+Return a JSON object with this exact structure:
+{
+  "issues": [
+    { "severity": "high"|"medium"|"low", "field": "field_name_or_record_id", "message": "description of the issue" }
+  ],
+  "summary": "overall compliance summary in 1-2 sentences"
+}
+
+Return ONLY the JSON object, no other text.`;
+
+    // Dynamic require to avoid startup errors if SDK not yet installed
+    const Anthropic = require('@anthropic-ai/sdk');
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    const message = await client.messages.create({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const rawText = message.content[0]?.text || '{}';
+    let parsed;
+    try {
+      // Strip any markdown code fences if present
+      const cleaned = rawText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch {
+      parsed = { issues: [], summary: 'Compliance check completed. Unable to parse detailed results.' };
+    }
+
+    audit(req, 'compliance_check', null, 'AI_CHECK', null, { type, record_count: recordCount });
+    res.json({
+      issues:  Array.isArray(parsed.issues)  ? parsed.issues  : [],
+      summary: typeof parsed.summary === 'string' ? parsed.summary : 'Check complete.',
+    });
+  } catch(e) {
+    console.error('Compliance check error:', e);
+    res.status(500).json({ error: 'Compliance check failed. Please try again.' });
+  }
+});
+
 // ═══════════════════════════════════════════════════════
 //  PUBLIC
 // ═══════════════════════════════════════════════════════

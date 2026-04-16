@@ -299,6 +299,10 @@
   <div class="nav-item" id="nav-form4473"  onclick="showPage('form4473')">📋 Form 4473</div>
   <div class="nav-item" id="nav-reports"   onclick="showPage('reports')">📈 Reports</div>
   <div class="nav-item" id="nav-auditlog"  onclick="showPage('auditlog')">🔎 Audit Log</div>
+  <div class="nav-item" id="nav-compliance" onclick="showPage('compliance')">🤖 AI Compliance</div>
+
+  <div class="nav-section">Services</div>
+  <div class="nav-item" id="nav-gunsmith" onclick="showPage('gunsmith')">🔧 Gunsmithing</div>
 
   <div class="nav-section">Account</div>
   <div class="nav-item" id="nav-settings"  onclick="showPage('settings')">⚙️ Settings</div>
@@ -354,6 +358,10 @@
       <button class="btn btn--red btn--sm" onclick="openAddFirearmModal()">+ Add Firearm</button>
       <button class="btn btn--ghost btn--sm" onclick="showPage('customers');setTimeout(openAddCustomerModal,80)">+ Add Customer</button>
       <button class="btn btn--ghost btn--sm" onclick="printATFReport()">🖨 Print ATF Report</button>
+    </div>
+
+    <div id="alerts-section" style="margin-bottom:24px;display:none">
+      <div id="alerts-container" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
 
     <div class="onboarding-card" id="onboardingCard">
@@ -581,9 +589,14 @@
         <h4>Section C — Transferor / Seller (to be completed by FFL)</h4>
         <div class="f4473-grid-2">
           <div class="form-group"><label>Transaction Date <span class="req">*</span></label><input type="date" id="f-txdate" /></div>
-          <div class="form-group"><label>NICS Transaction # (NTN)</label><input type="text" id="f-ntn" placeholder="NTN or state reference #" /></div>
+          <div class="form-group"><label>NICS Transaction # (NTN)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="f-ntn" placeholder="NTN or state reference #" style="flex:1" />
+              <a href="https://www.fbi.gov/services/cjis/nics" target="_blank" rel="noopener noreferrer" class="btn btn--ghost btn--sm" style="white-space:nowrap;text-decoration:none">🔗 Open FBI eNICS</a>
+            </div>
+          </div>
           <div class="form-group"><label>NICS Result <span class="req">*</span></label>
-            <select id="f-nics">
+            <select id="f-nics" onchange="updateNICSStatusBadge()">
               <option value="">Select…</option>
               <option value="proceed">Proceed</option>
               <option value="delayed">Delayed</option>
@@ -592,6 +605,10 @@
             </select>
           </div>
           <div class="form-group"><label>Reason if Denied / Notes</label><input type="text" id="f-nics-notes" placeholder="Notes…" /></div>
+        </div>
+        <div id="nics-status-row" style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+          <span style="font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Current NICS Result:</span>
+          <span id="nics-status-badge" style="font-size:12px;font-weight:700">—</span>
         </div>
       </div>
     </div>
@@ -646,6 +663,53 @@
     </div>
   </div>
 
+  <!-- AI COMPLIANCE -->
+  <div class="page" id="page-compliance">
+    <div class="page-header">
+      <div><h2>AI Compliance Checker</h2><p>Scan your records for ATF compliance issues before an inspection</p></div>
+    </div>
+    <!-- Three check cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:24px">
+      <div class="stat-card" style="cursor:pointer" onclick="runComplianceCheck('adbook')">
+        <div style="font-size:28px;margin-bottom:8px">📒</div>
+        <div class="stat-card__label">A&amp;D Book Check</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px">Scan for missing fields, date issues, serial anomalies</div>
+        <button class="btn btn--ghost btn--sm" style="margin-top:14px;width:100%">Run Check →</button>
+      </div>
+      <div class="stat-card" style="cursor:pointer" onclick="runComplianceCheck('4473')">
+        <div style="font-size:28px;margin-bottom:8px">📋</div>
+        <div class="stat-card__label">Form 4473 Check</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px">Verify NICS entries, citizenship fields, date consistency</div>
+        <button class="btn btn--ghost btn--sm" style="margin-top:14px;width:100%">Run Check →</button>
+      </div>
+      <div class="stat-card" style="cursor:pointer" onclick="runComplianceCheck('full')">
+        <div style="font-size:28px;margin-bottom:8px">🔍</div>
+        <div class="stat-card__label">Full Audit Check</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px">Complete compliance scan — A&amp;D + 4473 + cross-references</div>
+        <button class="btn btn--red btn--sm" style="margin-top:14px;width:100%">Full Scan →</button>
+      </div>
+    </div>
+    <!-- Results area -->
+    <div id="compliance-loading" style="display:none;text-align:center;padding:48px">
+      <div style="font-size:32px;margin-bottom:12px">🔄</div>
+      <div style="color:var(--muted)">AI is scanning your records…</div>
+    </div>
+    <div id="compliance-results" style="display:none">
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <h3>Scan Results</h3>
+          <span id="compliance-summary" style="font-size:13px;color:var(--muted)"></span>
+        </div>
+        <div id="compliance-issues-list" style="padding:16px;display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+    </div>
+    <div id="compliance-clean" style="display:none;text-align:center;padding:48px">
+      <div style="font-size:40px;margin-bottom:12px">✅</div>
+      <div style="color:var(--green);font-size:16px;font-weight:700">No issues found!</div>
+      <div style="color:var(--muted);font-size:13px;margin-top:6px">Your records look ATF-compliant.</div>
+    </div>
+  </div>
+
   <!-- POS / SALES -->
   <div class="page" id="page-pos">
     <div class="page-header">
@@ -688,6 +752,43 @@
             <tr><th>#</th><th>Date</th><th>Customer</th><th>Firearm</th><th>Amount</th><th>Payment</th><th>Notes</th><th>Actions</th></tr>
           </thead>
           <tbody id="pos-tbody"><tr><td colspan="8"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- GUNSMITHING -->
+  <div class="page" id="page-gunsmith">
+    <div class="page-header">
+      <div><h2>Gunsmithing</h2><p>Work orders, repairs, and service tracking</p></div>
+      <button class="btn btn--red btn--sm" onclick="openWorkOrderModal()">+ New Work Order</button>
+    </div>
+    <!-- Stats row -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">
+      <div class="stat-card"><div class="stat-card__label">Open Orders</div><div class="stat-card__value" id="wo-stat-open">—</div></div>
+      <div class="stat-card"><div class="stat-card__label">In Progress</div><div class="stat-card__value" id="wo-stat-progress">—</div></div>
+      <div class="stat-card"><div class="stat-card__label">Ready</div><div class="stat-card__value" id="wo-stat-ready">—</div></div>
+      <div class="stat-card"><div class="stat-card__label">Revenue (MTD)</div><div class="stat-card__value" id="wo-stat-revenue">—</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <h3 id="wo-count">Work Orders</h3>
+        <div class="toolbar-right">
+          <select class="search-input" style="width:130px" id="wo-filter-status" onchange="renderWorkOrders()">
+            <option value="">All Status</option>
+            <option value="received">Received</option>
+            <option value="in_progress">In Progress</option>
+            <option value="ready">Ready</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <input class="search-input" placeholder="Search…" id="wo-search" oninput="renderWorkOrders()" />
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>#</th><th>Customer</th><th>Firearm</th><th>Description</th><th>Status</th><th>Received</th><th>Promise</th><th>Est. $</th><th>Actions</th></tr></thead>
+          <tbody id="wo-tbody"><tr><td colspan="9"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1025,6 +1126,45 @@
   </div>
 </div>
 
+<!-- WORK ORDER MODAL -->
+<div class="modal-overlay" id="workOrderModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header"><h3 id="wo-modal-title">New Work Order</h3><button class="modal-close" onclick="closeWorkOrderModal()">✕</button></div>
+    <div class="form-group"><label>Customer</label>
+      <select class="form-input" id="wo-customer-id"><option value="">Walk-in / No customer on file</option></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Firearm Make</label><input class="form-input" id="wo-make" placeholder="Glock, Ruger…" /></div>
+      <div class="form-group"><label>Model</label><input class="form-input" id="wo-model-field" placeholder="G19, 10/22…" /></div>
+    </div>
+    <div class="form-group"><label>Serial # (optional)</label><input class="form-input" id="wo-serial" placeholder="Serial number" /></div>
+    <div class="form-group"><label>Description of Work <span class="req">*</span></label>
+      <textarea class="form-input" id="wo-desc" rows="3" placeholder="Clean and lubricate, trigger job, sight replacement…"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Date Received <span class="req">*</span></label><input class="form-input" type="date" id="wo-received" /></div>
+      <div class="form-group"><label>Promise Date</label><input class="form-input" type="date" id="wo-promise" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Est. Price ($)</label><input class="form-input" type="number" id="wo-est-price" placeholder="0.00" step="0.01" /></div>
+      <div class="form-group"><label>Status</label>
+        <select class="form-input" id="wo-status">
+          <option value="received">Received</option>
+          <option value="in_progress">In Progress</option>
+          <option value="ready">Ready for Pickup</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea class="form-input" id="wo-notes" rows="2" placeholder="Internal notes…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn--ghost" onclick="closeWorkOrderModal()">Cancel</button>
+      <button class="btn btn--red" onclick="saveWorkOrder()" id="wo-save-btn">Create Work Order</button>
+    </div>
+  </div>
+</div>
+
 <!-- GLOBAL SEARCH OVERLAY -->
 <div class="search-results-overlay" id="searchOverlay" onclick="closeSearch(event)">
   <div class="search-results-panel">
@@ -1175,14 +1315,15 @@ function showPage(name) {
   if (nav) nav.classList.add('active');
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebarOverlay').classList.remove('open');
-  if (name === 'adbook')    renderFirearms();
-  if (name === 'inventory') renderInventory();
-  if (name === 'customers') renderCustomers();
-  if (name === 'settings')  { prefillSettings(); loadLocations(); }
-  if (name === 'reports')   loadReports();
-  if (name === 'auditlog')  loadAuditLog();
-  if (name === 'form4473')  { loadForms4473(); populate4473Dropdowns(); }
-  if (name === 'pos')       { renderSales(); updatePosStats(); }
+  if (name === 'adbook')     renderFirearms();
+  if (name === 'inventory')  renderInventory();
+  if (name === 'customers')  renderCustomers();
+  if (name === 'settings')   { prefillSettings(); loadLocations(); }
+  if (name === 'reports')    loadReports();
+  if (name === 'auditlog')   loadAuditLog();
+  if (name === 'form4473')   { loadForms4473(); populate4473Dropdowns(); }
+  if (name === 'pos')        { renderSales(); updatePosStats(); }
+  if (name === 'gunsmith')   loadWorkOrders();
 }
 
 function toggleSidebar() {
@@ -1206,6 +1347,7 @@ async function loadDashboard() {
     document.getElementById('stat-transferred').textContent = d.transferred;
     document.getElementById('stat-customers').textContent   = d.total_customers;
     updateOnboarding(d);
+    loadInventoryAlerts();
   } catch(e) {}
 }
 
@@ -2027,6 +2169,7 @@ function open4473New() {
   document.getElementById('f-idnum').value = '';
   document.getElementById('f-idstate').value = '';
   document.getElementById('f-nics').value  = '';
+  updateNICSStatusBadge();
   document.querySelectorAll('[name^="q21"]').forEach(function(r){ r.checked = false; });
   document.getElementById('f-customer-link').value = '';
   document.getElementById('f-firearm-link').value  = '';
@@ -2097,6 +2240,26 @@ function print4473(id) {
   var w = window.open('', '_blank', 'width=900,height=700');
   w.document.write(html);
   w.document.close();
+}
+
+function updateNICSStatusBadge() {
+  var val = document.getElementById('f-nics').value;
+  var badge = document.getElementById('nics-status-badge');
+  if (!badge) return;
+  var config = {
+    proceed:   { label: 'PROCEED',   color: '#4ade80', bg: 'rgba(74,222,128,.15)' },
+    denied:    { label: 'DENIED',    color: '#f87171', bg: 'rgba(239,68,68,.15)' },
+    delayed:   { label: 'DELAYED',   color: '#fbbf24', bg: 'rgba(251,191,36,.15)' },
+    cancelled: { label: 'CANCELLED', color: '#94a3b8', bg: 'rgba(100,116,139,.15)' }
+  };
+  if (!val || !config[val]) {
+    badge.textContent = '—';
+    badge.style.cssText = '';
+    return;
+  }
+  var c = config[val];
+  badge.textContent = c.label;
+  badge.style.cssText = 'background:' + c.bg + ';color:' + c.color + ';padding:2px 10px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:.04em';
 }
 
 function autoFill4473Customer() {
@@ -2509,6 +2672,255 @@ function exportSalesCSV() {
   downloadCSV('BoundStack_sales.csv', csv);
 }
 
+// ── AI Compliance Checker ─────────────────────
+async function runComplianceCheck(type) {
+  var loading = document.getElementById('compliance-loading');
+  var results = document.getElementById('compliance-results');
+  var clean   = document.getElementById('compliance-clean');
+  loading.style.display = 'block';
+  results.style.display = 'none';
+  clean.style.display   = 'none';
+  try {
+    var data = await api('POST', '/api/app/compliance-check', { type: type });
+    var issues = data.issues || [];
+    loading.style.display = 'none';
+    if (!issues.length) {
+      clean.style.display = 'block';
+    } else {
+      results.style.display = 'block';
+      var summary = document.getElementById('compliance-summary');
+      var high   = issues.filter(function(i){ return i.severity === 'high'; }).length;
+      var medium = issues.filter(function(i){ return i.severity === 'medium'; }).length;
+      var low    = issues.filter(function(i){ return i.severity === 'low'; }).length;
+      summary.textContent = issues.length + ' issue(s) found — ' + high + ' high, ' + medium + ' medium, ' + low + ' low';
+      var severityBorder = { high: '#ef4444', medium: '#fbbf24', low: '#60a5fa' };
+      var severityBadgeBg = { high: 'rgba(239,68,68,.15)', medium: 'rgba(251,191,36,.15)', low: 'rgba(96,165,250,.15)' };
+      var severityBadgeColor = { high: '#f87171', medium: '#fbbf24', low: '#60a5fa' };
+      document.getElementById('compliance-issues-list').innerHTML = issues.map(function(issue) {
+        var sev = issue.severity || 'low';
+        var borderColor = severityBorder[sev] || '#60a5fa';
+        var badgeBg = severityBadgeBg[sev] || severityBadgeBg.low;
+        var badgeColor = severityBadgeColor[sev] || severityBadgeColor.low;
+        return '<div style="border-left:4px solid ' + borderColor + ';background:var(--surface);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:4px">' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            '<span style="background:' + badgeBg + ';color:' + badgeColor + ';padding:2px 8px;border-radius:100px;font-size:10.5px;font-weight:700;text-transform:uppercase">' + esc(sev) + '</span>' +
+            '<span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">' + esc(issue.field || '') + '</span>' +
+          '</div>' +
+          '<div style="font-size:13px;color:var(--text);margin-top:2px">' + esc(issue.message || '') + '</div>' +
+          (issue.record ? '<div style="font-size:11px;color:var(--dim);margin-top:2px">Record: ' + esc(issue.record) + '</div>' : '') +
+        '</div>';
+      }).join('');
+    }
+  } catch(e) {
+    loading.style.display = 'none';
+    toast(e.message || 'Compliance check failed', 'error');
+  }
+}
+
+// ── Inventory Alerts ──────────────────────────
+async function loadInventoryAlerts() {
+  try {
+    var data = await api('GET', '/api/app/inventory-alerts');
+    var container = document.getElementById('alerts-container');
+    var section   = document.getElementById('alerts-section');
+    if (!container || !section) return;
+    container.innerHTML = '';
+    var hasAny = false;
+    var slowMovers = data.slow_movers || [];
+    var recentCount = data.recent_count || 0;
+    if (slowMovers.length > 0) {
+      hasAny = true;
+      var div = document.createElement('div');
+      div.style.cssText = 'background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:10px;padding:12px 16px;font-size:13px;color:#fbbf24;display:flex;align-items:center;gap:10px';
+      div.innerHTML = '<span style="font-size:16px">⚠️</span> <span>' + esc(String(slowMovers.length)) + ' firearm(s) in stock for 90+ days — consider pricing review</span>';
+      container.appendChild(div);
+    }
+    if (recentCount > 0) {
+      hasAny = true;
+      var div2 = document.createElement('div');
+      div2.style.cssText = 'background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);border-radius:10px;padding:12px 16px;font-size:13px;color:#4ade80;display:flex;align-items:center;gap:10px';
+      div2.innerHTML = '<span style="font-size:16px">✅</span> <span>' + esc(String(recentCount)) + ' new acquisition(s) this week</span>';
+      container.appendChild(div2);
+    }
+    section.style.display = hasAny ? 'block' : 'none';
+  } catch(e) { /* Silently fail — alerts are non-critical */ }
+}
+
+// ── Work Orders (Gunsmithing) ──────────────────
+var allWorkOrders = [];
+var editingWorkOrderId = null;
+
+async function loadWorkOrders() {
+  try {
+    var data = await api('GET', '/api/app/work-orders');
+    allWorkOrders = data.work_orders || [];
+    renderWorkOrders();
+    // Stats
+    var open     = allWorkOrders.filter(function(w){ return w.status === 'received'; }).length;
+    var inProg   = allWorkOrders.filter(function(w){ return w.status === 'in_progress'; }).length;
+    var ready    = allWorkOrders.filter(function(w){ return w.status === 'ready'; }).length;
+    var now      = new Date();
+    var mtdRev   = allWorkOrders.filter(function(w){
+      if (w.status !== 'completed' || !w.completed_at) return false;
+      var d = new Date(w.completed_at);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }).reduce(function(s, w){ return s + parseFloat(w.est_price || 0); }, 0);
+    var el1 = document.getElementById('wo-stat-open');
+    var el2 = document.getElementById('wo-stat-progress');
+    var el3 = document.getElementById('wo-stat-ready');
+    var el4 = document.getElementById('wo-stat-revenue');
+    if (el1) el1.textContent = open;
+    if (el2) el2.textContent = inProg;
+    if (el3) el3.textContent = ready;
+    if (el4) el4.textContent = '$' + mtdRev.toFixed(2);
+  } catch(e) { console.error('loadWorkOrders', e); }
+}
+
+function renderWorkOrders() {
+  var statusF = (document.getElementById('wo-filter-status') || {}).value || '';
+  var q       = ((document.getElementById('wo-search') || {}).value || '').toLowerCase();
+  var list    = allWorkOrders.filter(function(w) {
+    if (statusF && w.status !== statusF) return false;
+    if (q) {
+      var txt = ((w.customer_name||'') + ' ' + (w.make||'') + ' ' + (w.model||'') + ' ' + (w.description||'') + ' ' + (w.serial||'')).toLowerCase();
+      if (!txt.includes(q)) return false;
+    }
+    return true;
+  });
+
+  var countEl = document.getElementById('wo-count');
+  if (countEl) countEl.textContent = 'Work Orders (' + list.length + ')';
+
+  var tbody = document.getElementById('wo-tbody');
+  if (!tbody) return;
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">🔧</div><p>' +
+      (allWorkOrders.length ? 'No work orders match your filter.' : 'No work orders yet.') + '</p>' +
+      (!allWorkOrders.length ? '<button class="btn btn--red btn--sm" onclick="openWorkOrderModal()">+ New Work Order</button>' : '') +
+      '</div></td></tr>';
+    return;
+  }
+
+  var statusBadge = {
+    received:    '<span style="background:rgba(96,165,250,.15);color:#60a5fa;padding:2px 9px;border-radius:100px;font-size:10.5px;font-weight:700;text-transform:uppercase">Received</span>',
+    in_progress: '<span style="background:rgba(251,191,36,.15);color:#fbbf24;padding:2px 9px;border-radius:100px;font-size:10.5px;font-weight:700;text-transform:uppercase">In Progress</span>',
+    ready:       '<span style="background:rgba(74,222,128,.15);color:#4ade80;padding:2px 9px;border-radius:100px;font-size:10.5px;font-weight:700;text-transform:uppercase">Ready</span>',
+    completed:   '<span style="background:rgba(100,116,139,.15);color:#94a3b8;padding:2px 9px;border-radius:100px;font-size:10.5px;font-weight:700;text-transform:uppercase">Completed</span>',
+    cancelled:   '<span style="background:rgba(239,68,68,.12);color:#f87171;padding:2px 9px;border-radius:100px;font-size:10.5px;font-weight:700;text-transform:uppercase">Cancelled</span>'
+  };
+
+  tbody.innerHTML = list.map(function(w) {
+    var badge = statusBadge[w.status] || esc(w.status);
+    var custName = w.customer_name ? esc(w.customer_name) : '<span style="color:var(--dim)">Walk-in</span>';
+    var firearmLabel = [w.make, w.model].filter(Boolean).map(esc).join(' ') || '<span style="color:var(--dim)">—</span>';
+    if (w.serial) firearmLabel += ' <span style="color:var(--dim);font-size:11px">S/N: ' + esc(w.serial) + '</span>';
+    return '<tr>' +
+      '<td style="color:var(--dim);font-size:11px">' + w.id + '</td>' +
+      '<td>' + custName + '</td>' +
+      '<td>' + firearmLabel + '</td>' +
+      '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(w.description||'') + '">' + esc(w.description||'—') + '</td>' +
+      '<td>' + badge + '</td>' +
+      '<td style="color:var(--dim);white-space:nowrap">' + fmtDate(w.received_date) + '</td>' +
+      '<td style="color:var(--dim);white-space:nowrap">' + (w.promise_date ? fmtDate(w.promise_date) : '—') + '</td>' +
+      '<td style="color:var(--green);font-weight:700">' + (w.est_price ? '$' + parseFloat(w.est_price).toFixed(2) : '—') + '</td>' +
+      '<td style="white-space:nowrap">' +
+        '<button class="tbl-btn tbl-btn--edit" onclick="openWorkOrderModal(' + w.id + ')">Edit</button>&nbsp;' +
+        '<button class="tbl-btn tbl-btn--del" onclick="deleteWorkOrder(' + w.id + ')">Delete</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function openWorkOrderModal(id) {
+  editingWorkOrderId = id || null;
+  var modal = document.getElementById('workOrderModal');
+  var title = document.getElementById('wo-modal-title');
+  var saveBtn = document.getElementById('wo-save-btn');
+
+  // Populate customer dropdown
+  var csel = document.getElementById('wo-customer-id');
+  csel.innerHTML = '<option value="">Walk-in / No customer on file</option>';
+  allCustomers.forEach(function(c) {
+    var o = document.createElement('option');
+    o.value = c.id;
+    o.textContent = c.first_name + ' ' + c.last_name + (c.phone ? '  ·  ' + c.phone : '');
+    csel.appendChild(o);
+  });
+
+  if (id) {
+    var w = allWorkOrders.find(function(x){ return x.id === id; });
+    if (!w) return;
+    title.textContent = 'Edit Work Order';
+    saveBtn.textContent = 'Save Changes';
+    document.getElementById('wo-customer-id').value = w.customer_id || '';
+    document.getElementById('wo-make').value         = w.make || '';
+    document.getElementById('wo-model-field').value  = w.model || '';
+    document.getElementById('wo-serial').value       = w.serial || '';
+    document.getElementById('wo-desc').value         = w.description || '';
+    document.getElementById('wo-received').value     = w.received_date || '';
+    document.getElementById('wo-promise').value      = w.promise_date || '';
+    document.getElementById('wo-est-price').value    = w.est_price || '';
+    document.getElementById('wo-status').value       = w.status || 'received';
+    document.getElementById('wo-notes').value        = w.notes || '';
+  } else {
+    title.textContent = 'New Work Order';
+    saveBtn.textContent = 'Create Work Order';
+    document.getElementById('wo-customer-id').value = '';
+    ['wo-make','wo-model-field','wo-serial','wo-desc','wo-promise','wo-notes'].forEach(function(id){ document.getElementById(id).value = ''; });
+    document.getElementById('wo-est-price').value = '';
+    document.getElementById('wo-received').value  = todayISO();
+    document.getElementById('wo-status').value    = 'received';
+  }
+  modal.classList.add('open');
+}
+
+function closeWorkOrderModal() {
+  document.getElementById('workOrderModal').classList.remove('open');
+  editingWorkOrderId = null;
+}
+
+async function saveWorkOrder() {
+  var desc     = document.getElementById('wo-desc').value.trim();
+  var received = document.getElementById('wo-received').value;
+  if (!desc)     { toast('Description of work is required', 'error'); return; }
+  if (!received) { toast('Date received is required', 'error'); return; }
+  var body = {
+    customer_id:   document.getElementById('wo-customer-id').value || null,
+    make:          document.getElementById('wo-make').value.trim()         || null,
+    model:         document.getElementById('wo-model-field').value.trim()  || null,
+    serial:        document.getElementById('wo-serial').value.trim()       || null,
+    description:   desc,
+    received_date: received,
+    promise_date:  document.getElementById('wo-promise').value             || null,
+    est_price:     document.getElementById('wo-est-price').value ? parseFloat(document.getElementById('wo-est-price').value) : null,
+    status:        document.getElementById('wo-status').value              || 'received',
+    notes:         document.getElementById('wo-notes').value.trim()        || null
+  };
+  try {
+    if (editingWorkOrderId) {
+      await api('PATCH', '/api/app/work-orders/' + editingWorkOrderId, body);
+      toast('Work order updated');
+    } else {
+      await api('POST', '/api/app/work-orders', body);
+      toast('Work order created');
+    }
+    closeWorkOrderModal();
+    loadWorkOrders();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function deleteWorkOrder(id) {
+  var w = allWorkOrders.find(function(x){ return x.id === id; });
+  if (!w) return;
+  if (!confirm('Delete work order #' + id + '? This cannot be undone.')) return;
+  try {
+    await api('DELETE', '/api/app/work-orders/' + id);
+    toast('Work order deleted');
+    loadWorkOrders();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
 // ── Upgrade modal ─────────────────────────────
 function showUpgradeModal(msg) {
   var el = document.getElementById('upgradeLimitMsg');
@@ -2525,12 +2937,19 @@ document.querySelectorAll('.modal-overlay').forEach(function(o) {
   o.addEventListener('click', function(e) {
     if (e.target === o) {
       o.classList.remove('open');
-      editingFirearmId = editingCustomerId = disposingFirearmId = editingLocationId = editingSaleId = null;
+      editingFirearmId = editingCustomerId = disposingFirearmId = editingLocationId = editingSaleId = editingWorkOrderId = null;
     }
   });
 });
 
 init();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js').catch(function() {});
+    });
+  }
 </script>
 </body>
 </html>
