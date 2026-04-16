@@ -299,18 +299,28 @@
        COMPARE TABLE
        ============================================================ */
     .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius); box-shadow: var(--shadow-m); }
-    .cmp { width: 100%; border-collapse: collapse; min-width: 680px; }
+    .cmp { width: 100%; border-collapse: collapse; min-width: 560px; }
     .cmp thead { background: var(--c-navy); }
     .cmp th {
-      padding: 16px 16px; text-align: left;
-      font-size: 12px; font-weight: 700; color: rgba(255,255,255,.55); letter-spacing: .04em;
+      padding: 12px 14px; text-align: left;
+      font-size: 11px; font-weight: 700; color: rgba(255,255,255,.55); letter-spacing: .04em;
+      white-space: nowrap;
     }
-    .cmp th.cmp--hl { color: #fff; font-size: 14px; }
+    .cmp th.cmp--hl { color: #fff; font-size: 13px; }
     .cmp td {
-      padding: 13px 16px; font-size: 13px; color: var(--c-text2);
+      padding: 11px 14px; font-size: 12.5px; color: var(--c-text2);
       border-bottom: 1px solid var(--c-border-l); background: #fff;
+      white-space: nowrap;
     }
-    .cmp td:first-child { font-weight: 600; color: var(--c-text); }
+    /* Sticky first column so feature name stays visible while scrolling */
+    .cmp th:first-child,
+    .cmp td:first-child {
+      position: sticky; left: 0; z-index: 2;
+      font-weight: 600; color: var(--c-text);
+    }
+    .cmp thead th:first-child { background: var(--c-navy); }
+    .cmp tbody td:first-child  { background: #fff; }
+    .cmp tbody tr:nth-child(even) td:first-child { background: #fafafa; }
     .cmp td.cmp--hl { background: rgba(196,30,58,.03); font-weight: 700; }
     .cmp tr:last-child td { border-bottom: none; }
     .t-yes { color: var(--c-green); font-weight: 700; }
@@ -596,9 +606,11 @@
     [data-theme="dark"] .table-scroll { border-radius:10px; overflow:hidden; }
     [data-theme="dark"] .cmp { background:#1e293b; }
     [data-theme="dark"] .cmp th { background:#0f172a; color:#f1f5f9; }
+    [data-theme="dark"] .cmp thead th:first-child { background:#0f172a; }
     [data-theme="dark"] .cmp td { background:#1e293b; color:#e2e8f0; border-color:#334155; }
-    [data-theme="dark"] .cmp td:first-child { color:#f1f5f9; }
+    [data-theme="dark"] .cmp td:first-child { color:#f1f5f9; background:#1e293b; }
     [data-theme="dark"] .cmp tbody tr:nth-child(even) td { background:#172033; }
+    [data-theme="dark"] .cmp tbody tr:nth-child(even) td:first-child { background:#172033; }
     [data-theme="dark"] .cmp td.cmp--hl { background:rgba(196,30,58,.18) !important; }
     [data-theme="dark"] .cmp th.cmp--hl { background:rgba(196,30,58,.35); }
 
@@ -623,6 +635,9 @@
     /* Buttons */
     [data-theme="dark"] .btn--ghost { border-color:#475569; color:#cbd5e1; }
     [data-theme="dark"] .btn--ghost:hover { background:#1e293b; }
+    [data-theme="dark"] .btn--outline { color:#e2e8f0; border-color:#475569; }
+    [data-theme="dark"] .btn--outline:hover { background:rgba(255,255,255,.06); border-color:#64748b; }
+    [data-theme="dark"] .btn--white { color:#0f172a; } /* white btn stays dark text on white bg */
 
     /* Theme toggle button */
     .theme-btn {
@@ -1083,7 +1098,7 @@
           Too many small shops are still running on paper or paying for bloated software built for big distributors. That's the problem I'm here to solve. Every feature in BoundStack exists because a real dealer needed it.
         </p>
         <p style="color:#94a3b8;font-size:14px;">
-          Questions or feedback? <a href="mailto:suttibaevrinat@gmail.com" style="color:#facc15;">suttibaevrinat@gmail.com</a>
+          Questions or feedback? <a href="mailto:hello@boundstack.org" style="color:#facc15;">hello@boundstack.org</a>
         </p>
       </div>
     </div>
