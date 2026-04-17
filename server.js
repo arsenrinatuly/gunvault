@@ -656,11 +656,15 @@ app.patch('/api/app/form4473/:id/nics', requireAuth, async (req, res) => {
 // ── Temp debug endpoint (remove after testing) ──
 app.get('/api/debug/envcheck', (req, res) => {
   const key = process.env.ANTHROPIC_API_KEY || '';
+  const allKeys = Object.keys(process.env);
   res.json({
     hasKey: key.length > 0,
     keyLength: key.length,
     keyPrefix: key.substring(0, 12),
-    allEnvKeys: Object.keys(process.env).filter(k => k.includes('ANTHROPIC') || k.includes('API'))
+    totalEnvVars: allKeys.length,
+    allEnvKeys: allKeys.sort(),
+    hasDb: !!process.env.DATABASE_URL,
+    hasJwt: !!process.env.JWT_SECRET
   });
 });
 
