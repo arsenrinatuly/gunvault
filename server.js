@@ -9,9 +9,24 @@ const rateLimit = require('express-rate-limit');
 const { stmts, upsertLeadFromUser, all, one, run, ready } = require('./db');
 const mailer    = require('./mailer');
 
-const app        = express();
-const JWT_SECRET = process.env.JWT_SECRET || 'change_me_in_production';
-const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'admin123';
+const app = express();
+
+// Optional Sentry (no-op if DSN not set, env-gated)
+let Sentry = null;
+if (process.env.SENTRY_DSN) {
+  try {
+    Sentry = require('@sentry/node');
+    Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1, environment: process.env.NODE_ENV || 'development' });
+  } catch { /* @sentry/node not installed — silent */ }
+}
+
+// Fail hard in production if secrets are not set
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.JWT_SECRET)     { console.error('FATAL: JWT_SECRET env var not set'); process.exit(1); }
+  if (!process.env.ADMIN_PASSWORD) { console.error('FATAL: ADMIN_PASSWORD env var not set'); process.exit(1); }
+}
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_only_secret_not_for_production';
+const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'dev_admin_only';
 
 // Trust Vercel's proxy (required for correct IP + rate limiting)
 app.set('trust proxy', 1);
@@ -50,7 +65,13 @@ const apiLimiter = rateLimit({
   windowMs: 60 * 1000, max: 200,
   message: { error: 'Too many requests.' },
 });
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, max: 50,
+  message: { error: 'Too many admin requests. Wait 15 minutes.' },
+  standardHeaders: true, legacyHeaders: false,
+});
 app.use('/api/', apiLimiter);
+app.use('/api/admin/', adminLimiter);
 app.use('/api/signin', authLimiter);
 app.use('/api/signup', authLimiter);
 app.use('/api/forgot-password', authLimiter);
@@ -72,6 +93,16 @@ function ok(s)      { return typeof s === 'string' && s.trim().length > 0; }
 function getIP(req) { return req.ip || req.connection?.remoteAddress || 'unknown'; }
 function isDupe(e)  { return e.code === '23505'; } // PostgreSQL unique_violation
 
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function audit(req, tableName, recordId, action, oldData, newData) {
   stmts.addAudit({
     user_id:    req.user?.id || 0,
@@ -90,18 +121,36 @@ function audit(req, tableName, recordId, action, oldData, newData) {
 
 app.post('/api/signup', async (req, res) => {
   try {
-    const { name, email, password, ffl_number, current_software } = req.body;
+    const { name, email, password, ffl_number, current_software, plan } = req.body;
     if (!ok(name))                            return res.status(400).json({ error: 'Name required' });
     if (!isEmail(email))                      return res.status(400).json({ error: 'Valid email required' });
     if (!ok(password) || password.length < 6) return res.status(400).json({ error: 'Password min 6 chars' });
     const existing = await stmts.getUserByEmail(email.toLowerCase().trim());
     if (existing) return res.status(409).json({ error: 'Account already exists with this email' });
 
+    const allowedPlans = ['free', 'starter', 'pro'];
+    const selectedPlan = allowedPlans.includes(plan) ? plan : 'free';
     const hash = await bcrypt.hash(password, 12);
     const user = await stmts.createUser({
       name: name.trim(), email: email.toLowerCase().trim(),
-      password_hash: hash, ffl_number: ffl_number || null, current_software: current_software || null
+      password_hash: hash, ffl_number: ffl_number || null, current_software: current_software || null, plan: selectedPlan
     });
+
+    // 14-day Pro trial for new signups + unique referral code
+    const refCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+    const trialEnds = new Date(Date.now() + 14 * 86400000).toISOString();
+    await run('UPDATE users SET trial_ends_at=$1, referral_code=$2 WHERE id=$3', [trialEnds, refCode, user.id]);
+
+    // Handle referral credit if ref code was passed
+    const refFrom = (req.body.ref || '').toUpperCase().trim();
+    if (refFrom) {
+      const referrer = await stmts.getUserByReferralCode(refFrom);
+      if (referrer && referrer.id !== user.id) {
+        await run('UPDATE users SET referred_by_code=$1 WHERE id=$2', [refFrom, user.id]);
+        await stmts.createReferral({ referrer_id: referrer.id, referred_id: user.id });
+      }
+    }
+
     upsertLeadFromUser({ ...user, ffl_number, current_software }, 'signup').catch(() => {});
     stmts.addWaitlist({ email: user.email, source: 'signup' }).catch(() => {});
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
@@ -410,12 +459,15 @@ app.post('/api/app/form4473', requireAuth, async (req, res) => {
       transferee_id_type:   d.id_type             || d.transferee_id_type || null,
       transferee_id_num:    d.id_number           || d.transferee_id_num  || null,
       transferee_gender:    d.transferee_sex      || d.transferee_gender  || null,
-      is_us_citizen:        d.q21l === 'yes' ? 0 : 1,
-      is_felon:             d.q21c === 'yes' ? 1 : 0,
-      is_fugitive:          d.q21d === 'yes' ? 1 : 0,
-      is_drug_user:         d.q21e === 'yes' ? 1 : 0,
-      is_mental_health:     d.q21f === 'yes' ? 1 : 0,
-      is_domestic_violence: d.q21i === 'yes' ? 1 : 0,
+      is_us_citizen:           d.q21k === 'yes' ? 0 : 1,
+      is_felon:                d.q21c === 'yes' ? 1 : 0,
+      is_fugitive:             d.q21d === 'yes' ? 1 : 0,
+      is_drug_user:            d.q21e === 'yes' ? 1 : 0,
+      is_mental_health:        d.q21f === 'yes' ? 1 : 0,
+      is_domestic_violence:    d.q21i === 'yes' ? 1 : 0,
+      is_renounced_citizen:    d.q21j === 'yes' ? 1 : 0,
+      is_nonimmigrant_alien:   d.q21l === 'yes' ? 1 : 0,
+      signature_data:          d.signature_data || null,
       nics_transaction:     d.nics_transaction_number || d.nics_transaction || null,
       nics_result:          d.nics_result         || null,
       transfer_date:        d.transaction_date    || d.transfer_date    || null,
@@ -608,6 +660,11 @@ app.post('/api/app/compliance-check', requireAuth, async (req, res) => {
     if (!['adbook', '4473', 'full'].includes(type))
       return res.status(400).json({ error: 'type must be adbook, 4473, or full' });
 
+    const anthropicKey = (process.env.ANTHROPIC_API_KEY || '').trim();
+    if (!anthropicKey) {
+      return res.status(503).json({ error: 'AI compliance requires an Anthropic API key. Add ANTHROPIC_API_KEY to your environment variables.' });
+    }
+
     const uid = req.user.id;
     let dataForAI = {};
 
@@ -689,7 +746,7 @@ Return ONLY the JSON object, no other text.`;
 
     // Dynamic require to avoid startup errors if SDK not yet installed
     const Anthropic = require('@anthropic-ai/sdk');
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const client = new Anthropic({ apiKey: anthropicKey });
 
     const message = await client.messages.create({
       model: 'claude-3-5-haiku-20241022',
@@ -716,6 +773,390 @@ Return ONLY the JSON object, no other text.`;
     console.error('Compliance check error:', e);
     res.status(500).json({ error: 'Compliance check failed. Please try again.' });
   }
+});
+
+// ═══════════════════════════════════════════════════════
+//  PHASE 2 — POS, Importers, AI Validate, Readiness,
+//            Referrals, Sync, Multi-sale, Onboarding step
+// ═══════════════════════════════════════════════════════
+
+// ── POS Checkout (real multi-item transaction with split tender) ──
+app.post('/api/app/pos/checkout', requireAuth, async (req, res) => {
+  try {
+    const { customer_id, items, tax, tender, notes } = req.body;
+    if (!Array.isArray(items) || !items.length) return res.status(400).json({ error: 'Cart is empty' });
+
+    let subtotal = 0;
+    const validated = [];
+    for (const it of items) {
+      const price = parseFloat(it.price || 0);
+      const qty   = parseInt(it.qty || 1, 10);
+      if (isNaN(price) || isNaN(qty) || qty < 1) return res.status(400).json({ error: 'Invalid line item' });
+      subtotal += price * qty;
+      validated.push({ sku: it.sku || null, firearm_id: it.firearm_id || null, description: it.description || '', qty, price });
+    }
+    const taxAmt = parseFloat(tax || 0) || 0;
+    const total  = subtotal + taxAmt;
+
+    // tender = [{method:'cash',amount:N}, {method:'card',amount:N}]
+    const tenderArr = Array.isArray(tender) ? tender : [];
+    const paidTotal = tenderArr.reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
+    if (paidTotal + 0.01 < total) return res.status(400).json({ error: `Under-tender: paid ${paidTotal.toFixed(2)}, total ${total.toFixed(2)}` });
+
+    const receiptNo = 'R' + Date.now().toString(36).toUpperCase();
+    const txn = await stmts.addPosTxn({
+      user_id: req.user.id, customer_id: customer_id || null,
+      items: JSON.stringify(validated), subtotal, tax: taxAmt, total,
+      tender: JSON.stringify(tenderArr), receipt_no: receiptNo, notes: notes || null,
+    });
+
+    // Auto-dispose any firearm line items + record a sale row
+    for (const it of validated) {
+      if (it.firearm_id) {
+        try {
+          await stmts.disposeFirearm({
+            disposition_date: new Date().toISOString().slice(0,10),
+            disposition_to: 'POS sale',
+            disposition_customer_id: customer_id || null,
+            id: it.firearm_id, user_id: req.user.id,
+          });
+        } catch {}
+        try {
+          await stmts.addSale({
+            user_id: req.user.id, customer_id: customer_id || null,
+            firearm_id: it.firearm_id,
+            sale_date: new Date().toISOString().slice(0,10),
+            amount: it.price * it.qty,
+            payment_method: (tenderArr[0]?.method) || 'cash',
+            notes: `POS ${receiptNo}`,
+          });
+        } catch {}
+      }
+    }
+
+    audit(req, 'pos_transactions', txn.id, 'CHECKOUT', null, { receiptNo, total, items: validated.length });
+    res.status(201).json({ message: 'Transaction complete', id: txn.id, receipt_no: receiptNo, subtotal, tax: taxAmt, total });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'POS checkout failed' }); }
+});
+
+app.get('/api/app/pos/history', requireAuth, async (req, res) => {
+  try { res.json({ txns: await stmts.getPosTxns(req.user.id) }); }
+  catch(e) { res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Migration importers — FastBound, Orchid eBound, Bravo ──
+// Accepts either { csv: "<raw csv text>", format: 'fastbound'|'orchid'|'bravo' }
+// or already-parsed { rows:[...], format }
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return [];
+  const parse = (line) => {
+    const out = []; let cur = ''; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (inQ) {
+        if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+        else if (c === '"') inQ = false;
+        else cur += c;
+      } else {
+        if (c === '"') inQ = true;
+        else if (c === ',') { out.push(cur); cur = ''; }
+        else cur += c;
+      }
+    }
+    out.push(cur);
+    return out;
+  };
+  const headers = parse(lines[0]).map(h => h.trim().toLowerCase());
+  return lines.slice(1).map(l => {
+    const vals = parse(l);
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (vals[i] || '').trim());
+    return obj;
+  });
+}
+
+// Vendor-specific field mappers
+const IMPORTERS = {
+  fastbound: (r) => ({
+    manufacturer: r.manufacturer || r.make || '',
+    importer:     r.importer || '',
+    model:        r.model || '',
+    serial_number: r.serial || r.serial_number || r['serial number'] || '',
+    caliber:      r.caliber || r.cal || '',
+    type:         r.type || r['firearm type'] || 'Unknown',
+    acquisition_date: r['acquisition date'] || r.acq_date || r.acquisition_date || '',
+    acquisition_from: r['acquired from'] || r.acquisition_from || r.source || '',
+    notes: r.notes || '',
+  }),
+  orchid: (r) => ({
+    manufacturer: r.mfr || r.manufacturer || r['manufacturer name'] || '',
+    importer:     r.importer || '',
+    model:        r.model || r['model name'] || '',
+    serial_number: r['serial #'] || r.serial || r.serial_number || '',
+    caliber:      r.caliber || r.gauge || '',
+    type:         r['firearm type'] || r.type || 'Unknown',
+    acquisition_date: r['date acquired'] || r.acquisition_date || '',
+    acquisition_from: r['name and address'] || r.source || r.acquisition_from || '',
+    notes: r.notes || '',
+  }),
+  bravo: (r) => ({
+    manufacturer: r.manufacturer || r.mfr || '',
+    importer:     r.importer || '',
+    model:        r.model || '',
+    serial_number: r.serial_number || r.serial || '',
+    caliber:      r.caliber || '',
+    type:         r.category || r.type || 'Unknown',
+    acquisition_date: r.received_date || r.acquisition_date || '',
+    acquisition_from: r.vendor || r.acquisition_from || '',
+    notes: r.notes || '',
+  }),
+  generic: (r) => ({
+    manufacturer: r.manufacturer || '', importer: r.importer || '',
+    model: r.model || '', serial_number: r.serial_number || '',
+    caliber: r.caliber || '', type: r.type || '',
+    acquisition_date: r.acquisition_date || '',
+    acquisition_from: r.acquisition_from || '', notes: r.notes || '',
+  }),
+};
+
+// Dry-run (validate only, show errors, don't commit)
+app.post('/api/app/import/dry-run', requireAuth, async (req, res) => {
+  try {
+    const { csv, format, rows: preRows } = req.body;
+    const fmt = IMPORTERS[format] ? format : 'generic';
+    const mapper = IMPORTERS[fmt];
+    const raw = Array.isArray(preRows) ? preRows : (csv ? parseCSV(csv) : []);
+    if (!raw.length) return res.status(400).json({ error: 'No rows to import' });
+
+    const preview = [], errors = [];
+    raw.forEach((r, i) => {
+      const mapped = mapper(r);
+      const missing = ['manufacturer','model','serial_number','caliber','type','acquisition_date','acquisition_from']
+        .filter(k => !mapped[k]);
+      if (missing.length) errors.push({ row: i + 2, missing });
+      preview.push(mapped);
+    });
+    res.json({ format: fmt, total: raw.length, preview: preview.slice(0, 20), errors: errors.slice(0, 50), ok: raw.length - errors.length });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Dry-run failed' }); }
+});
+
+// Commit import
+app.post('/api/app/import/commit', requireAuth, async (req, res) => {
+  try {
+    const { csv, format, rows: preRows } = req.body;
+    const fmt = IMPORTERS[format] ? format : 'generic';
+    const mapper = IMPORTERS[fmt];
+    const raw = Array.isArray(preRows) ? preRows : (csv ? parseCSV(csv) : []);
+    if (!raw.length) return res.status(400).json({ error: 'No rows to import' });
+
+    let imported = 0, skipped = 0, errors = [];
+    for (const r of raw) {
+      const m = mapper(r);
+      if (!m.manufacturer || !m.model || !m.serial_number || !m.caliber || !m.type || !m.acquisition_date || !m.acquisition_from) { skipped++; continue; }
+      try {
+        await stmts.addFirearm({ user_id: req.user.id, location_id: null, ...m, is_nfa: false });
+        imported++;
+      } catch(e) {
+        if (isDupe(e)) skipped++;
+        else errors.push(`Serial ${m.serial_number}: ${e.message}`);
+      }
+    }
+    audit(req, 'firearms', null, 'MIGRATION_IMPORT', null, { format: fmt, imported, skipped });
+    res.json({ message: `Imported ${imported}, skipped ${skipped}.`, imported, skipped, errors: errors.slice(0, 10), format: fmt });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Import failed' }); }
+});
+
+// ── AI Pre-submit 4473 Validation ──
+app.post('/api/app/validate-4473', requireAuth, async (req, res) => {
+  try {
+    const d = req.body || {};
+    // Local sanity checks (don't need AI for these)
+    const issues = [];
+    if (!d.transferee_first && !d.transferee_last) issues.push({ severity: 'high', field: 'name', message: 'Transferee name is required.' });
+    if (!d.transferee_dob) issues.push({ severity: 'high', field: 'dob', message: 'Date of birth is required.' });
+    else {
+      const dob = new Date(d.transferee_dob);
+      if (isNaN(dob.getTime())) issues.push({ severity: 'high', field: 'dob', message: 'DOB is not a valid date.' });
+      else {
+        const age = (Date.now() - dob.getTime()) / (365.25 * 86400000);
+        if (age < 18) issues.push({ severity: 'high', field: 'dob', message: `Transferee is under 18 (${age.toFixed(1)} yrs).` });
+        if (age < 21 && d.firearm_type === 'Handgun') issues.push({ severity: 'high', field: 'dob', message: 'Handgun transfer requires age 21+.' });
+      }
+    }
+    if (!d.id_number) issues.push({ severity: 'high', field: 'id_number', message: 'Government ID number is required.' });
+    if (!d.transferee_address) issues.push({ severity: 'medium', field: 'address', message: 'Address is required.' });
+    if (d.q21c === 'yes' || d.q21d === 'yes' || d.q21e === 'yes' || d.q21f === 'yes' || d.q21i === 'yes') {
+      issues.push({ severity: 'high', field: 'prohibited', message: 'Transferee indicates a prohibited-person status. Transfer must be denied.' });
+    }
+    if (d.firearm_id) {
+      const fa = await stmts.getFirearm(d.firearm_id, req.user.id);
+      if (!fa) issues.push({ severity: 'high', field: 'firearm_id', message: 'Selected firearm not found in your inventory.' });
+      else if (fa.disposition_date) issues.push({ severity: 'high', field: 'firearm_id', message: 'Selected firearm has already been disposed.' });
+    }
+
+    // AI pass (optional, only if key present and enough fields)
+    let aiSummary = null, aiIssues = [];
+    if (process.env.ANTHROPIC_API_KEY && issues.length < 5) {
+      try {
+        const Anthropic = require('@anthropic-ai/sdk');
+        const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        const prompt = `You are an ATF compliance reviewer. Check this Form 4473 entry for problems BEFORE the dealer submits it. Return strict JSON only: {"issues":[{"severity":"high"|"medium"|"low","field":"...","message":"..."}],"summary":"1-2 sentences"}. Data:\n` + JSON.stringify({
+          name: [d.transferee_first, d.transferee_middle, d.transferee_last].filter(Boolean).join(' '),
+          dob: d.transferee_dob, address: d.transferee_address, city: d.transferee_city, state: d.id_state, zip: d.transferee_zip,
+          id_type: d.id_type, id_number: d.id_number, sex: d.transferee_sex,
+          answers: { c: d.q21c, d: d.q21d, e: d.q21e, f: d.q21f, i: d.q21i, j: d.q21j, k: d.q21k, l: d.q21l },
+          nics_transaction: d.nics_transaction_number, nics_result: d.nics_result,
+        });
+        const m = await client.messages.create({ model: 'claude-3-5-haiku-20241022', max_tokens: 512, messages: [{ role: 'user', content: prompt }] });
+        const txt = (m.content[0]?.text || '{}').replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '').trim();
+        const parsed = JSON.parse(txt);
+        if (Array.isArray(parsed.issues)) aiIssues = parsed.issues;
+        aiSummary = parsed.summary || null;
+      } catch(e) { /* AI optional */ }
+    }
+
+    res.json({ issues: [...issues, ...aiIssues], summary: aiSummary || (issues.length ? 'Local checks found issues.' : 'All local checks passed.'), ready: issues.filter(i => i.severity === 'high').length === 0 });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Validation failed' }); }
+});
+
+// ── Inspection Readiness Score ──
+app.get('/api/app/readiness-score', requireAuth, async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const [firearms, forms, u] = await Promise.all([
+      stmts.getFirearms(uid), stmts.get4473s(uid), stmts.getUserById(uid),
+    ]);
+    const checks = [];
+    // 1. Required user fields
+    checks.push({ id: 'ffl', weight: 10, label: 'FFL number on file',    pass: !!u.ffl_number });
+    checks.push({ id: 'shop', weight: 5,  label: 'Shop name on file',    pass: !!u.shop_name });
+    // 2. Firearms with all required fields
+    const badFirearms = firearms.filter(f => !f.manufacturer || !f.model || !f.serial_number || !f.caliber || !f.type || !f.acquisition_date || !f.acquisition_from);
+    checks.push({ id: 'firearms_complete', weight: 20, label: `Firearm records complete`, pass: badFirearms.length === 0, detail: badFirearms.length ? `${badFirearms.length} records missing required fields` : null });
+    // 3. Disposed firearms with matching 4473
+    const disposed = firearms.filter(f => f.disposition_date);
+    const serialsFrom4473 = new Set(forms.filter(f => f.firearm_id).map(f => f.firearm_id));
+    const disposedWithout4473 = disposed.filter(f => !serialsFrom4473.has(f.id));
+    checks.push({ id: 'disposed_has_4473', weight: 20, label: 'Disposed firearms have a Form 4473', pass: disposedWithout4473.length === 0, detail: disposedWithout4473.length ? `${disposedWithout4473.length} dispositions without a linked 4473` : null });
+    // 4. Completed transfers with NICS
+    const completedNoNics = forms.filter(f => f.status !== 'pending' && !f.nics_transaction);
+    checks.push({ id: 'nics_complete', weight: 15, label: 'Completed 4473s have NICS number', pass: completedNoNics.length === 0, detail: completedNoNics.length ? `${completedNoNics.length} missing NICS number` : null });
+    // 5. Prohibited-person flags on completed transfers
+    const prohibitedCompleted = forms.filter(f => f.status === 'complete' && (f.is_felon || f.is_fugitive || f.is_drug_user || f.is_mental_health || f.is_domestic_violence));
+    checks.push({ id: 'prohibited_blocked', weight: 20, label: 'No completed transfers to prohibited persons', pass: prohibitedCompleted.length === 0, detail: prohibitedCompleted.length ? `${prohibitedCompleted.length} completed transfers with prohibited-person flag` : null });
+    // 6. Serial number sanity
+    const badSerials = firearms.filter(f => /^(0+|1+|)$/.test(f.serial_number || '') || (f.serial_number || '').length < 3);
+    checks.push({ id: 'serials_sane', weight: 10, label: 'Serial numbers look valid', pass: badSerials.length === 0, detail: badSerials.length ? `${badSerials.length} suspicious serials` : null });
+
+    const maxScore = checks.reduce((s, c) => s + c.weight, 0);
+    const earned   = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
+    const score    = Math.round((earned / maxScore) * 100);
+    const grade    = score >= 95 ? 'A' : score >= 85 ? 'B' : score >= 70 ? 'C' : score >= 50 ? 'D' : 'F';
+
+    res.json({ score, grade, checks, total_firearms: firearms.length, total_forms: forms.length });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Readiness check failed' }); }
+});
+
+// ── Multi-handgun sale detection (ATF 3310.4) ──
+app.get('/api/app/multi-sale/check', requireAuth, async (req, res) => {
+  try {
+    const uid = req.user.id;
+    // Find any 4473s to the same transferee within 5 business days for 2+ handguns
+    const recent = await all(
+      `SELECT f4.transferee_name, f4.transferee_dob, f4.transfer_date, f4.firearm_id, f.type, f.manufacturer, f.model, f.serial_number
+       FROM form_4473 f4 LEFT JOIN firearms f ON f4.firearm_id=f.id
+       WHERE f4.user_id=$1 AND f4.transfer_date IS NOT NULL AND f4.transfer_date != ''
+         AND f4.transfer_date::date >= NOW() - INTERVAL '30 days'
+       ORDER BY f4.transfer_date DESC`, [uid]);
+    const groups = {};
+    for (const r of recent) {
+      const key = (r.transferee_name || '') + '|' + (r.transferee_dob || '');
+      if (!key.trim().replace('|','')) continue;
+      groups[key] = groups[key] || [];
+      groups[key].push(r);
+    }
+    const handgunFlags = [], rifleFlags = [];
+    for (const k of Object.keys(groups)) {
+      const txns = groups[k];
+      const handguns = txns.filter(t => /handgun|pistol|revolver/i.test(t.type || ''));
+      const rifles   = txns.filter(t => /rifle/i.test(t.type || ''));
+      if (handguns.length >= 2) {
+        const dates = handguns.map(h => h.transfer_date).sort();
+        const diff = (new Date(dates[dates.length-1]) - new Date(dates[0])) / 86400000;
+        if (diff <= 5) handgunFlags.push({ key: k, firearms: handguns, first: dates[0], last: dates[dates.length-1] });
+      }
+      if (rifles.length >= 2) {
+        const dates = rifles.map(h => h.transfer_date).sort();
+        const diff = (new Date(dates[dates.length-1]) - new Date(dates[0])) / 86400000;
+        if (diff <= 5) rifleFlags.push({ key: k, firearms: rifles, first: dates[0], last: dates[dates.length-1] });
+      }
+    }
+    res.json({ form_3310_4: handgunFlags, form_3310_12: rifleFlags });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Referrals ──
+app.get('/api/app/referrals', requireAuth, async (req, res) => {
+  try {
+    const u = await stmts.getUserById(req.user.id);
+    const referrals = await stmts.getReferralsForUser(req.user.id);
+    const baseUrl = process.env.APP_URL || 'https://boundstack.org';
+    res.json({
+      code: u.referral_code,
+      url: `${baseUrl}/?ref=${u.referral_code}`,
+      referrals,
+      earned: referrals.filter(r => r.credit_status === 'paid').reduce((s, r) => s + parseFloat(r.credit_amount || 0), 0),
+      pending: referrals.filter(r => r.credit_status === 'pending').length,
+    });
+  } catch(e) { res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Onboarding step ──
+app.patch('/api/app/onboarding/step', requireAuth, async (req, res) => {
+  try {
+    const step = parseInt(req.body.step || 0, 10);
+    await run('UPDATE users SET onboarding_step=$1 WHERE id=$2', [step, req.user.id]);
+    if (step >= 5) await stmts.completeOnboard(req.user.id);
+    res.json({ message: 'Step saved', step });
+  } catch(e) { res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Offline sync queue (idempotent replay) ──
+app.post('/api/app/sync', requireAuth, async (req, res) => {
+  try {
+    const { ops } = req.body;
+    if (!Array.isArray(ops)) return res.status(400).json({ error: 'ops must be an array' });
+    const results = [];
+    for (const op of ops) {
+      if (!op.id || !op.type || !op.payload) { results.push({ id: op.id, status: 'error', error: 'Missing id/type/payload' }); continue; }
+      const exists = await stmts.getSyncOp(req.user.id, op.id);
+      if (exists) { results.push({ id: op.id, status: 'duplicate' }); continue; }
+      try {
+        if (op.type === 'firearm.add') {
+          await stmts.addFirearm({ user_id: req.user.id, ...op.payload });
+        } else if (op.type === 'customer.add') {
+          await stmts.addCustomer({ user_id: req.user.id, ...op.payload });
+        } else if (op.type === 'sale.add') {
+          await stmts.addSale({ user_id: req.user.id, ...op.payload });
+        } else {
+          results.push({ id: op.id, status: 'unknown-type' }); continue;
+        }
+        await stmts.recordSyncOp({ user_id: req.user.id, op_id: op.id, op_type: op.type, payload: JSON.stringify(op.payload) });
+        results.push({ id: op.id, status: 'applied' });
+      } catch(e) {
+        if (isDupe(e)) { await stmts.recordSyncOp({ user_id: req.user.id, op_id: op.id, op_type: op.type, payload: JSON.stringify(op.payload), status: 'duplicate' }); results.push({ id: op.id, status: 'duplicate' }); }
+        else results.push({ id: op.id, status: 'error', error: e.message });
+      }
+    }
+    res.json({ results, applied: results.filter(r => r.status === 'applied').length });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Sync failed' }); }
+});
+
+// ── Audit chain verification ──
+app.get('/api/app/audit-log/verify', requireAuth, async (req, res) => {
+  try { res.json(await stmts.verifyAuditChain(req.user.id)); }
+  catch(e) { res.status(500).json({ error: 'Server error' }); }
 });
 
 // ═══════════════════════════════════════════════════════
@@ -842,7 +1283,7 @@ app.post('/api/app/inspector-token', requireAuth, async (req, res) => {
   try {
     const token = crypto.randomBytes(24).toString('hex');
     await stmts.setInspectorToken(req.user.id, token);
-    res.json({ token, url: `${process.env.APP_URL || 'https://gunvault.vercel.app'}/inspect/${token}` });
+    res.json({ token, url: `${process.env.APP_URL || 'https://boundstack.org'}/inspect/${token}` });
   } catch(e) { res.status(500).json({ error: 'Server error' }); }
 });
 
@@ -854,21 +1295,21 @@ app.get('/inspect/:token', async (req, res) => {
     const firearms = await stmts.getFirearms(dealer.id);
     const rows = firearms.map(f => `
       <tr>
-        <td>${f.id}</td>
-        <td>${f.manufacturer || ''}</td>
-        <td>${f.importer || '—'}</td>
-        <td>${f.model || ''}</td>
-        <td style="font-family:monospace">${f.serial_number || ''}</td>
-        <td>${f.caliber || ''}</td>
-        <td>${f.type || ''}</td>
-        <td>${f.acquisition_date || ''}</td>
-        <td>${f.acquisition_from || ''}</td>
-        <td>${f.disposition_date || '—'}</td>
-        <td>${f.disposition_to || '—'}</td>
+        <td>${escHtml(f.id)}</td>
+        <td>${escHtml(f.manufacturer)}</td>
+        <td>${escHtml(f.importer) || '—'}</td>
+        <td>${escHtml(f.model)}</td>
+        <td style="font-family:monospace">${escHtml(f.serial_number)}</td>
+        <td>${escHtml(f.caliber)}</td>
+        <td>${escHtml(f.type)}</td>
+        <td>${escHtml(f.acquisition_date)}</td>
+        <td>${escHtml(f.acquisition_from)}</td>
+        <td>${escHtml(f.disposition_date) || '—'}</td>
+        <td>${escHtml(f.disposition_to) || '—'}</td>
         <td>${f.is_nfa ? '⚠️ NFA' : ''}</td>
       </tr>`).join('');
     res.send(`<!DOCTYPE html><html lang="en"><head>
-      <meta charset="UTF-8"><title>ATF Inspection — ${dealer.shop_name || dealer.name}</title>
+      <meta charset="UTF-8"><title>ATF Inspection — ${escHtml(dealer.shop_name || dealer.name)}</title>
       <style>
         body{font-family:Arial,sans-serif;margin:0;padding:24px;background:#f8f8f8;color:#111}
         .header{background:#1a1a2e;color:#fff;padding:20px 24px;border-radius:8px;margin-bottom:24px}
@@ -884,7 +1325,7 @@ app.get('/inspect/:token', async (req, res) => {
       </style></head><body>
       <div class="header">
         <h1>A&amp;D Bound Book — Read-Only ATF Inspection View <span class="badge">READ ONLY</span></h1>
-        <p>${dealer.shop_name || dealer.name} &nbsp;|&nbsp; FFL: ${dealer.ffl_number || 'N/A'} &nbsp;|&nbsp; Generated: ${new Date().toUTCString()}</p>
+        <p>${escHtml(dealer.shop_name || dealer.name)} &nbsp;|&nbsp; FFL: ${escHtml(dealer.ffl_number) || 'N/A'} &nbsp;|&nbsp; Generated: ${new Date().toUTCString()}</p>
       </div>
       <div class="readonly">⚠️ <strong>This is a read-only view generated for ATF inspection purposes.</strong> No edits can be made through this link. Powered by BoundStack.</div>
       <p class="meta">Total records: <strong>${firearms.length}</strong> &nbsp;|&nbsp; In inventory: <strong>${firearms.filter(f=>!f.disposition_date).length}</strong> &nbsp;|&nbsp; Transferred: <strong>${firearms.filter(f=>f.disposition_date).length}</strong></p>
