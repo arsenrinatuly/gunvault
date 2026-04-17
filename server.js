@@ -653,6 +653,17 @@ app.patch('/api/app/form4473/:id/nics', requireAuth, async (req, res) => {
   } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
+// ── Temp debug endpoint (remove after testing) ──
+app.get('/api/debug/envcheck', (req, res) => {
+  const key = process.env.ANTHROPIC_API_KEY || '';
+  res.json({
+    hasKey: key.length > 0,
+    keyLength: key.length,
+    keyPrefix: key.substring(0, 12),
+    allEnvKeys: Object.keys(process.env).filter(k => k.includes('ANTHROPIC') || k.includes('API'))
+  });
+});
+
 // ── AI Compliance Checker ─────────────────────
 app.post('/api/app/compliance-check', requireAuth, async (req, res) => {
   try {
