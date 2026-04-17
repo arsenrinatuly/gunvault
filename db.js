@@ -235,9 +235,89 @@ async function initSchema() {
 
   // ATF Inspector token (idempotent)
   await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS inspector_token TEXT`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS inspector_token_created_at TIMESTAMPTZ`);
 
   // NICS checked_at column (idempotent)
   await q(`ALTER TABLE form_4473 ADD COLUMN IF NOT EXISTS nics_checked_at TEXT`);
+
+  // 4473 missing questions (idempotent)
+  await q(`ALTER TABLE form_4473 ADD COLUMN IF NOT EXISTS is_renounced_citizen INTEGER DEFAULT 0`);
+  await q(`ALTER TABLE form_4473 ADD COLUMN IF NOT EXISTS is_nonimmigrant_alien INTEGER DEFAULT 0`);
+  await q(`ALTER TABLE form_4473 ADD COLUMN IF NOT EXISTS signature_data TEXT`);
+
+  // ── Phase 2 additions ─────────────────────
+  // Trial, referrals, 2FA, state
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_code TEXT`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS state TEXT`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled INTEGER DEFAULT 0`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_step INTEGER DEFAULT 0`);
+  await q(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code) WHERE referral_code IS NOT NULL`);
+
+  // Hash-chained audit log
+  await q(`ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS prev_hash TEXT`);
+  await q(`ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS row_hash TEXT`);
+
+  // Referrals (tracks who referred whom, credit status)
+  await q(`
+    CREATE TABLE IF NOT EXISTS referrals (
+      id             SERIAL PRIMARY KEY,
+      referrer_id    INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      referred_id    INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      credit_status  TEXT        DEFAULT 'pending',
+      credit_amount  NUMERIC(10,2) DEFAULT 50,
+      created_at     TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(referrer_id, referred_id)
+    )
+  `);
+
+  // POS transactions (multi-item with split tender)
+  await q(`
+    CREATE TABLE IF NOT EXISTS pos_transactions (
+      id            SERIAL PRIMARY KEY,
+      user_id       INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      customer_id   INTEGER     REFERENCES customers(id),
+      items         TEXT        NOT NULL,
+      subtotal      NUMERIC(10,2) NOT NULL DEFAULT 0,
+      tax           NUMERIC(10,2) NOT NULL DEFAULT 0,
+      total         NUMERIC(10,2) NOT NULL DEFAULT 0,
+      tender        TEXT,
+      receipt_no    TEXT,
+      status        TEXT        DEFAULT 'complete',
+      notes         TEXT,
+      created_at    TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  // Offline sync queue (idempotency for gun show mode)
+  await q(`
+    CREATE TABLE IF NOT EXISTS sync_ops (
+      id          SERIAL PRIMARY KEY,
+      user_id     INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      op_id       TEXT        NOT NULL,
+      op_type     TEXT        NOT NULL,
+      payload     TEXT        NOT NULL,
+      status      TEXT        DEFAULT 'applied',
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(user_id, op_id)
+    )
+  `);
+
+  // Multiple handgun sales tracking (ATF 3310.4)
+  await q(`
+    CREATE TABLE IF NOT EXISTS multi_sale_reports (
+      id            SERIAL PRIMARY KEY,
+      user_id       INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      form_type     TEXT        NOT NULL,
+      customer_id   INTEGER     REFERENCES customers(id),
+      firearm_ids   TEXT        NOT NULL,
+      first_sale    TEXT        NOT NULL,
+      last_sale     TEXT        NOT NULL,
+      status        TEXT        DEFAULT 'pending',
+      created_at    TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
 
   // Gunsmithing work orders
   await q(`
@@ -270,21 +350,27 @@ const ready = initSchema().catch(e => console.error('Schema init error:', e.mess
 const stmts = {
 
   // ── Users ─────────────────────────────────
-  createUser: ({ name, email, password_hash, ffl_number, current_software }) =>
-    one('INSERT INTO users (name,email,password_hash,ffl_number,current_software) VALUES ($1,$2,$3,$4,$5) RETURNING id,name,email,plan',
-      [name, email, password_hash, ffl_number || null, current_software || null]),
+  createUser: ({ name, email, password_hash, ffl_number, current_software, plan }) =>
+    one('INSERT INTO users (name,email,password_hash,ffl_number,current_software,plan) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id,name,email,plan',
+      [name, email, password_hash, ffl_number || null, current_software || null, plan || 'free']),
 
   getUserByEmail: (email) =>
     one('SELECT * FROM users WHERE email=$1 LIMIT 1', [email]),
 
   getUserById: (id) =>
-    one('SELECT id,name,email,ffl_number,shop_name,phone,plan,onboarding_done,created_at,inspector_token FROM users WHERE id=$1 LIMIT 1', [id]),
+    one('SELECT id,name,email,ffl_number,shop_name,phone,plan,onboarding_done,onboarding_step,created_at,inspector_token,trial_ends_at,referral_code,state,totp_enabled FROM users WHERE id=$1 LIMIT 1', [id]),
 
   setInspectorToken: (id, token) =>
-    run('UPDATE users SET inspector_token=$1 WHERE id=$2', [token, id]),
+    run('UPDATE users SET inspector_token=$1, inspector_token_created_at=NOW() WHERE id=$2', [token, id]),
 
   getUserByInspectorToken: (token) =>
-    one('SELECT id,name,shop_name,ffl_number FROM users WHERE inspector_token=$1 LIMIT 1', [token]),
+    one(
+      `SELECT id,name,shop_name,ffl_number FROM users
+       WHERE inspector_token=$1
+         AND inspector_token_created_at > NOW() - INTERVAL '90 days'
+       LIMIT 1`,
+      [token]
+    ),
 
   updateUser: ({ name, phone, shop_name, ffl_number, id }) =>
     run('UPDATE users SET name=$1,phone=$2,shop_name=$3,ffl_number=$4 WHERE id=$5',
@@ -381,14 +467,15 @@ const stmts = {
     one('SELECT COUNT(*)::int AS total FROM customers WHERE user_id=$1', [user_id]),
 
   // ── Form 4473 ─────────────────────────────
-  add4473: ({ user_id, firearm_id, customer_id, transferee_name, transferee_address, transferee_city, transferee_state, transferee_zip, transferee_dob, transferee_id_type, transferee_id_num, transferee_gender, is_us_citizen, is_felon, is_fugitive, is_drug_user, is_mental_health, is_domestic_violence, nics_transaction, nics_result, transfer_date, status, notes }) =>
+  add4473: ({ user_id, firearm_id, customer_id, transferee_name, transferee_address, transferee_city, transferee_state, transferee_zip, transferee_dob, transferee_id_type, transferee_id_num, transferee_gender, is_us_citizen, is_felon, is_fugitive, is_drug_user, is_mental_health, is_domestic_violence, is_renounced_citizen, is_nonimmigrant_alien, signature_data, nics_transaction, nics_result, transfer_date, status, notes }) =>
     one(
       `INSERT INTO form_4473
        (user_id,firearm_id,customer_id,transferee_name,transferee_address,transferee_city,
         transferee_state,transferee_zip,transferee_dob,transferee_id_type,transferee_id_num,
         transferee_gender,is_us_citizen,is_felon,is_fugitive,is_drug_user,is_mental_health,
-        is_domestic_violence,nics_transaction,nics_result,transfer_date,status,notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
+        is_domestic_violence,is_renounced_citizen,is_nonimmigrant_alien,signature_data,
+        nics_transaction,nics_result,transfer_date,status,notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)
        RETURNING id`,
       [user_id, firearm_id || null, customer_id || null, transferee_name || null,
        transferee_address || null, transferee_city || null, transferee_state || null,
@@ -396,6 +483,7 @@ const stmts = {
        transferee_id_num || null, transferee_gender || null,
        is_us_citizen ?? 1, is_felon ?? 0, is_fugitive ?? 0, is_drug_user ?? 0,
        is_mental_health ?? 0, is_domestic_violence ?? 0,
+       is_renounced_citizen ?? 0, is_nonimmigrant_alien ?? 0, signature_data || null,
        nics_transaction || null, nics_result || null, transfer_date || null,
        status || 'pending', notes || null]),
 
@@ -409,13 +497,71 @@ const stmts = {
     run('UPDATE form_4473 SET status=$1,nics_transaction=$2,nics_result=$3,notes=$4 WHERE id=$5 AND user_id=$6',
       [status || 'pending', nics_transaction || null, nics_result || null, notes || null, id, user_id]),
 
-  // ── Audit log ─────────────────────────────
-  addAudit: ({ user_id, table_name, record_id, action, old_data, new_data, ip_address }) =>
-    run('INSERT INTO audit_log (user_id,table_name,record_id,action,old_data,new_data,ip_address) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-      [user_id, table_name, record_id || null, action, old_data || null, new_data || null, ip_address || null]),
+  // ── Audit log (hash-chained append-only) ──
+  addAudit: async ({ user_id, table_name, record_id, action, old_data, new_data, ip_address }) => {
+    const crypto = require('crypto');
+    const prev = await one('SELECT row_hash FROM audit_log WHERE user_id=$1 ORDER BY id DESC LIMIT 1', [user_id]);
+    const prev_hash = prev?.row_hash || 'GENESIS';
+    const payload = JSON.stringify({ user_id, table_name, record_id: record_id || null, action, old_data, new_data, ip_address, ts: Date.now() });
+    const row_hash = crypto.createHash('sha256').update(prev_hash + payload).digest('hex');
+    await run('INSERT INTO audit_log (user_id,table_name,record_id,action,old_data,new_data,ip_address,prev_hash,row_hash) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+      [user_id, table_name, record_id || null, action, old_data || null, new_data || null, ip_address || null, prev_hash, row_hash]);
+  },
 
   getAuditLog: (user_id) =>
     all('SELECT * FROM audit_log WHERE user_id=$1 ORDER BY created_at DESC LIMIT 200', [user_id]),
+
+  verifyAuditChain: async (user_id) => {
+    const crypto = require('crypto');
+    const rows = await all('SELECT * FROM audit_log WHERE user_id=$1 ORDER BY id ASC', [user_id]);
+    let expected = 'GENESIS';
+    for (const r of rows) {
+      if (r.prev_hash !== expected) return { valid: false, broken_at: r.id };
+      expected = r.row_hash;
+    }
+    return { valid: true, count: rows.length };
+  },
+
+  // ── Referrals ─────────────────────────────
+  setReferralCode: (id, code) =>
+    run('UPDATE users SET referral_code=$1 WHERE id=$2 AND referral_code IS NULL', [code, id]),
+
+  getUserByReferralCode: (code) =>
+    one('SELECT id,name FROM users WHERE referral_code=$1 LIMIT 1', [code]),
+
+  createReferral: ({ referrer_id, referred_id }) =>
+    run('INSERT INTO referrals (referrer_id,referred_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [referrer_id, referred_id]),
+
+  getReferralsForUser: (user_id) =>
+    all(`SELECT r.*, u.name as referred_name, u.email as referred_email, u.plan as referred_plan
+         FROM referrals r JOIN users u ON r.referred_id=u.id
+         WHERE r.referrer_id=$1 ORDER BY r.created_at DESC`, [user_id]),
+
+  // ── POS transactions ──────────────────────
+  addPosTxn: ({ user_id, customer_id, items, subtotal, tax, total, tender, receipt_no, notes }) =>
+    one(`INSERT INTO pos_transactions (user_id,customer_id,items,subtotal,tax,total,tender,receipt_no,notes)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+      [user_id, customer_id || null, items, subtotal, tax, total, tender || null, receipt_no || null, notes || null]),
+
+  getPosTxns: (user_id) =>
+    all('SELECT * FROM pos_transactions WHERE user_id=$1 ORDER BY created_at DESC LIMIT 200', [user_id]),
+
+  // ── Sync ops (offline queue) ──────────────
+  getSyncOp: (user_id, op_id) =>
+    one('SELECT id FROM sync_ops WHERE user_id=$1 AND op_id=$2', [user_id, op_id]),
+
+  recordSyncOp: ({ user_id, op_id, op_type, payload, status }) =>
+    run('INSERT INTO sync_ops (user_id,op_id,op_type,payload,status) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (user_id,op_id) DO NOTHING',
+      [user_id, op_id, op_type, payload, status || 'applied']),
+
+  // ── Multi-sale reports (ATF 3310.4 / 3310.12) ──
+  addMultiSale: ({ user_id, form_type, customer_id, firearm_ids, first_sale, last_sale }) =>
+    one(`INSERT INTO multi_sale_reports (user_id,form_type,customer_id,firearm_ids,first_sale,last_sale)
+         VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+      [user_id, form_type, customer_id || null, firearm_ids, first_sale, last_sale]),
+
+  getMultiSales: (user_id) =>
+    all('SELECT * FROM multi_sale_reports WHERE user_id=$1 ORDER BY created_at DESC', [user_id]),
 
   // ── Leads ─────────────────────────────────
   createLead: ({ name, email, phone, shop_name, ffl_number, current_software, source, stage, priority }) =>

@@ -3,679 +3,638 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script>if (localStorage.getItem('gv_token')) { window.location.replace('/app'); }</script>
+  <script>if (localStorage.getItem('bs_token')) { window.location.replace('/app'); }</script>
   <title>BoundStack — FFL Software That Actually Works</title>
   <meta name="description" content="Cloud-native ATF compliance, POS, and business management for FFL dealers. Free to start. No contracts. Never de-platformed." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    /* ============================================================
-       RESET & BASE
-       ============================================================ */
+    /* ── RESET ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-    html { overflow-x: hidden; } /* clip page-level overflow without breaking child scroll containers */
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      color: #0f172a; background: #fff; line-height: 1.6;
-      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-    }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+    body { font-family: 'Inter', sans-serif; background: #06080F; color: #E8EFF8; line-height: 1.6; -webkit-font-smoothing: antialiased; }
     a { color: inherit; text-decoration: none; }
     ul { list-style: none; }
-    button { font-family: inherit; cursor: pointer; }
-    img { max-width: 100%; display: block; }
+    button, input, select, textarea { font-family: inherit; }
+    button { cursor: pointer; }
 
-    /* Emoji rendering */
-    .emoji {
-      font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
-      font-style: normal; font-weight: 400; line-height: 1;
-    }
-
-    /* ============================================================
-       TOKENS
-       ============================================================ */
+    /* ── TOKENS ── */
     :root {
-      --c-bg:       #ffffff;
-      --c-bg-alt:   #f8fafc;
-      --c-navy:     #0b1929;
-      --c-navy2:    #132238;
-      --c-red:      #c41e3a;
-      --c-red-h:    #a91831;
-      --c-green:    #16a34a;
-      --c-amber:    #f59e0b;
-      --c-err:      #ef4444;
-      --c-text:     #0f172a;
-      --c-text2:    #475569;
-      --c-text3:    #94a3b8;
-      --c-border:   #e2e8f0;
-      --c-border-l: #f1f5f9;
-      --radius:     12px;
-      --radius-sm:  8px;
-      --shadow-s:   0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-      --shadow-m:   0 4px 20px rgba(0,0,0,.08);
-      --shadow-l:   0 12px 48px rgba(0,0,0,.14);
+      --ink:        #06080F;
+      --steel:      #0D1220;
+      --gun:        #141C2E;
+      --plate:      #1C2640;
+      --copper:     #C8641A;
+      --copper-h:   #E8762A;
+      --gold:       #B8965C;
+      --ice:        #E8EFF8;
+      --fog:        #7A8BA0;
+      --mist:       #2A3A52;
+      --danger:     #C41E3A;
+      --green:      #16a34a;
+      --radius:     10px;
+      --radius-sm:  6px;
+      --mw:         1160px;
       --dur:        .2s;
       --ease:       cubic-bezier(.4,0,.2,1);
-      --mw:         1140px;
     }
 
-    /* ============================================================
-       UTILITIES
-       ============================================================ */
-    .container { max-width: var(--mw); margin: 0 auto; padding: 0 24px; }
-    .sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0; }
+    /* ── UTILS ── */
+    .container { max-width: var(--mw); margin: 0 auto; padding: 0 28px; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .display { font-family: 'Bebas Neue', sans-serif; letter-spacing: .03em; }
+    .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);border:0; }
 
-    /* ============================================================
-       BUTTONS
-       ============================================================ */
+    /* ── BUTTONS ── */
     .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      padding: 12px 24px; border-radius: var(--radius-sm); border: none;
-      font-size: 15px; font-weight: 600; white-space: nowrap;
-      transition: all var(--dur) var(--ease);
-      -webkit-tap-highlight-color: transparent;
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 13px 26px; border-radius: var(--radius-sm); border: none;
+      font-size: 14px; font-weight: 700; white-space: nowrap; letter-spacing: .04em; text-transform: uppercase;
+      transition: all var(--dur) var(--ease); cursor: pointer;
     }
     .btn:active { transform: scale(.97); }
-
-    .btn--red { background: var(--c-red); color: #fff; }
-    .btn--red:hover { background: var(--c-red-h); box-shadow: 0 4px 16px rgba(196,30,58,.35); }
-
-    .btn--white { background: #fff; color: var(--c-text); }
-    .btn--white:hover { background: #f1f5f9; }
-
-    .btn--ghost { background: transparent; color: rgba(255,255,255,.85); border: 1.5px solid rgba(255,255,255,.25); }
-    .btn--ghost:hover { background: rgba(255,255,255,.1); color: #fff; }
-
-    .btn--outline { background: transparent; color: var(--c-text); border: 1.5px solid var(--c-border); }
-    .btn--outline:hover { border-color: var(--c-text3); }
-
-    .btn--navy { background: var(--c-navy); color: #fff; }
-    .btn--navy:hover { background: var(--c-navy2); }
-
-    .btn--lg { padding: 16px 32px; font-size: 16px; border-radius: var(--radius); }
+    .btn--copper { background: var(--copper); color: #fff; }
+    .btn--copper:hover { background: var(--copper-h); box-shadow: 0 0 28px rgba(200,100,26,.45); }
+    .btn--ghost { background: transparent; color: rgba(255,255,255,.75); border: 1.5px solid rgba(255,255,255,.18); }
+    .btn--ghost:hover { background: rgba(255,255,255,.07); color: #fff; border-color: rgba(255,255,255,.35); }
+    .btn--steel { background: var(--plate); color: var(--ice); border: 1.5px solid var(--mist); }
+    .btn--steel:hover { background: var(--gun); border-color: var(--copper); }
+    .btn--white { background: #fff; color: #06080F; }
+    .btn--white:hover { background: #E8EFF8; }
+    .btn--danger { background: var(--danger); color: #fff; }
+    .btn--danger:hover { background: #a91831; box-shadow: 0 0 24px rgba(196,30,58,.4); }
+    .btn--lg { padding: 16px 34px; font-size: 15px; }
     .btn--full { width: 100%; }
 
-    /* ============================================================
-       NAVIGATION
-       ============================================================ */
+    /* ── ANIMATED GRID BG ── */
+    @keyframes grid-move { from { background-position: 0 0; } to { background-position: 60px 60px; } }
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(200,100,26,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(200,100,26,.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: grid-move 8s linear infinite;
+    }
+
+    /* ── NAV ── */
     .nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-      background: rgba(11,25,41,.97); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      height: 64px;
+      height: 62px;
+      background: rgba(6,8,15,.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(200,100,26,.18);
     }
     .nav__inner {
-      max-width: var(--mw); margin: 0 auto; padding: 0 24px;
+      max-width: var(--mw); margin: 0 auto; padding: 0 28px;
       height: 100%; display: flex; align-items: center; justify-content: space-between;
     }
     .nav__logo {
       display: flex; align-items: center; gap: 10px;
-      font-weight: 800; font-size: 19px; color: #fff; letter-spacing: -.4px;
+      font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--ice); letter-spacing: .08em;
     }
     .nav__logo-mark {
-      width: 34px; height: 34px; background: var(--c-red); border-radius: 8px;
-      display: grid; place-items: center;
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--copper), #8B3A0A);
+      border-radius: 6px; display: grid; place-items: center;
+      box-shadow: 0 0 14px rgba(200,100,26,.5);
     }
-    .nav__logo-mark svg { width: 18px; height: 18px; }
-    .nav__links { display: flex; align-items: center; gap: 32px; }
+    .nav__logo-mark svg { width: 16px; height: 16px; }
+    .nav__links { display: flex; align-items: center; gap: 28px; }
     .nav__links a {
-      font-size: 14px; font-weight: 500; color: rgba(255,255,255,.6);
-      transition: color var(--dur);
-      position: relative;
+      font-size: 12px; font-weight: 600; color: var(--fog); letter-spacing: .06em; text-transform: uppercase;
+      transition: color var(--dur); position: relative;
     }
-    .nav__links a:hover,
-    .nav__links a.active { color: #fff; }
-    .nav__right { display: flex; align-items: center; gap: 10px; }
+    .nav__links a::after {
+      content: ''; position: absolute; bottom: -4px; left: 0; right: 0; height: 1.5px;
+      background: var(--copper); transform: scaleX(0); transition: transform var(--dur);
+    }
+    .nav__links a:hover, .nav__links a.active { color: var(--ice); }
+    .nav__links a:hover::after, .nav__links a.active::after { transform: scaleX(1); }
+    .nav__right { display: flex; align-items: center; gap: 8px; }
 
-    /* Hamburger */
+    /* Mobile nav */
     .nav__hamburger {
-      display: none; background: none; border: none; padding: 8px;
-      -webkit-tap-highlight-color: transparent; position: relative;
-      width: 40px; height: 40px;
+      display: none; background: none; border: none; padding: 8px; position: relative; width: 40px; height: 40px;
     }
     .nav__hamburger span {
-      position: absolute; left: 8px; width: 24px; height: 2px;
-      background: #fff; border-radius: 2px;
-      transition: all .3s var(--ease);
+      position: absolute; left: 8px; width: 24px; height: 1.5px;
+      background: var(--ice); border-radius: 2px; transition: all .3s var(--ease);
     }
-    .nav__hamburger span:nth-child(1) { top: 12px; }
-    .nav__hamburger span:nth-child(2) { top: 19px; }
-    .nav__hamburger span:nth-child(3) { top: 26px; }
-    .nav__hamburger.open span:nth-child(1) { top: 19px; transform: rotate(45deg); }
+    .nav__hamburger span:nth-child(1) { top: 13px; }
+    .nav__hamburger span:nth-child(2) { top: 20px; }
+    .nav__hamburger span:nth-child(3) { top: 27px; }
+    .nav__hamburger.open span:nth-child(1) { top: 20px; transform: rotate(45deg); }
     .nav__hamburger.open span:nth-child(2) { opacity: 0; }
-    .nav__hamburger.open span:nth-child(3) { top: 19px; transform: rotate(-45deg); }
+    .nav__hamburger.open span:nth-child(3) { top: 20px; transform: rotate(-45deg); }
 
-    /* Mobile menu */
     .mobile-nav {
-      position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
-      background: var(--c-navy2); z-index: 999;
-      display: flex; flex-direction: column; padding: 16px 24px 32px;
+      position: fixed; top: 62px; left: 0; right: 0; bottom: 0;
+      background: var(--steel); z-index: 999;
+      display: flex; flex-direction: column; padding: 20px 28px 40px;
       transform: translateX(100%); transition: transform .35s var(--ease);
-      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      overflow-y: auto;
     }
     .mobile-nav.open { transform: translateX(0); }
-    .mobile-nav a {
-      padding: 16px 0; color: rgba(255,255,255,.8);
-      font-size: 18px; font-weight: 500;
-      border-bottom: 1px solid rgba(255,255,255,.07);
-      transition: color var(--dur);
+    .mobile-nav__link {
+      padding: 18px 0; color: var(--fog);
+      font-size: 16px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+      border-bottom: 1px solid var(--mist); transition: color var(--dur);
     }
-    .mobile-nav a:hover { color: #fff; }
-    .mobile-nav .btn { margin-top: 24px; text-align: center; font-size: 17px; padding: 16px; }
+    .mobile-nav__link:hover { color: var(--ice); }
+    .mobile-nav .btn { margin-top: 28px; }
+    body.no-scroll { overflow: hidden; }
 
-    /* ============================================================
-       HERO
-       ============================================================ */
+    /* ── HERO ── */
     .hero {
-      background: linear-gradient(155deg, #091428 0%, #0c2040 50%, #0b1929 100%);
-      padding: 140px 24px 80px; text-align: center; position: relative; overflow: hidden;
+      min-height: 100vh;
+      background: var(--ink);
+      position: relative; overflow: hidden;
+      display: flex; align-items: center;
+      padding: 100px 28px 80px;
     }
     .hero::before {
-      content: ''; position: absolute; top: -40%; left: 20%; width: 60%; height: 120%;
-      background: radial-gradient(ellipse, rgba(196,30,58,.16) 0%, transparent 65%);
-      pointer-events: none;
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 40%, rgba(200,100,26,.12) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 80% at 20% 80%, rgba(13,18,32,.8) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+    .hero .grid-bg { position: absolute; inset: 0; z-index: 0; }
+    .hero__inner {
+      position: relative; z-index: 1;
+      max-width: var(--mw); margin: 0 auto; width: 100%;
+      display: grid; grid-template-columns: 1fr 420px; gap: 80px; align-items: center;
     }
     .hero__badge {
       display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(196,30,58,.12); border: 1px solid rgba(196,30,58,.25);
-      color: #fb7185; padding: 6px 16px; border-radius: 100px;
-      font-size: 12px; font-weight: 600; margin-bottom: 28px;
+      background: rgba(200,100,26,.12); border: 1px solid rgba(200,100,26,.3);
+      color: var(--copper-h); font-size: 11px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; padding: 6px 14px; border-radius: 4px; margin-bottom: 28px;
+    }
+    .hero__badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--copper); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+
+    .hero__h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(72px, 8vw, 120px);
+      line-height: .95; letter-spacing: .02em;
+      color: var(--ice);
+    }
+    .hero__h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--copper) 0%, var(--gold) 60%, var(--copper-h) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero__sub {
+      margin-top: 24px; font-size: 17px; color: var(--fog); line-height: 1.7; max-width: 480px;
+    }
+    .hero__cta { margin-top: 40px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .hero__fine {
+      margin-top: 20px; font-size: 12px; color: var(--fog); letter-spacing: .04em;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .hero__fine span { display: flex; align-items: center; gap: 5px; }
+    .hero__fine span::before { content: '✓'; color: var(--copper); font-weight: 700; }
+
+    /* Hero card (right side) */
+    .hero__card {
+      background: var(--steel);
+      border: 1px solid var(--mist);
+      border-radius: 14px;
+      padding: 32px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(200,100,26,.1);
       position: relative;
     }
-    .hero__badge-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--c-red);
-      animation: dot-pulse 2s ease-in-out infinite;
+    .hero__card::before {
+      content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--copper), transparent);
     }
-    @keyframes dot-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.75)} }
+    .hero__card-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: .06em; color: var(--ice); margin-bottom: 6px; }
+    .hero__card-sub { font-size: 12px; color: var(--fog); margin-bottom: 24px; }
 
-    .hero h1 {
-      font-size: clamp(36px, 7vw, 72px); font-weight: 900; color: #fff;
-      line-height: 1.05; letter-spacing: -2.5px;
-      max-width: 800px; margin: 0 auto 20px; position: relative;
+    .hero__form { display: flex; flex-direction: column; gap: 10px; }
+    .hero__input {
+      background: var(--gun); border: 1px solid var(--mist); border-radius: var(--radius-sm);
+      color: var(--ice); padding: 12px 14px; font-size: 14px; outline: none; width: 100%;
+      transition: border-color var(--dur);
     }
-    .hero h1 .accent { color: var(--c-red); }
-    .hero__sub {
-      font-size: clamp(16px, 2.2vw, 20px); color: rgba(255,255,255,.55);
-      max-width: 560px; margin: 0 auto 36px; line-height: 1.65; position: relative;
-    }
-    .hero__btns {
-      display: flex; align-items: center; justify-content: center;
-      gap: 12px; flex-wrap: wrap; margin-bottom: 14px; position: relative;
-    }
-    .hero__fine { font-size: 12px; color: rgba(255,255,255,.3); margin-bottom: 52px; position: relative; }
+    .hero__input::placeholder { color: var(--fog); }
+    .hero__input:focus { border-color: var(--copper); box-shadow: 0 0 0 3px rgba(200,100,26,.12); }
+    .hero__input option { background: var(--gun); }
 
-    /* Trust strip */
-    .trust {
-      display: flex; align-items: center; justify-content: center;
-      gap: 28px; flex-wrap: wrap; padding: 24px 0;
-      border-top: 1px solid rgba(255,255,255,.06); position: relative;
-    }
-    .trust__item {
-      display: flex; align-items: center; gap: 6px;
-      color: rgba(255,255,255,.45); font-size: 13px; font-weight: 500;
-    }
-    .trust__check {
-      width: 16px; height: 16px; border-radius: 50%; background: rgba(22,163,74,.15);
-      display: grid; place-items: center; flex-shrink: 0;
-    }
-    .trust__check svg { width: 10px; height: 10px; color: var(--c-green); }
+    .hero__card-fine { font-size: 11px; color: var(--fog); text-align: center; margin-top: 10px; line-height: 1.5; }
 
-    /* ============================================================
-       SECTION
-       ============================================================ */
-    .sec { padding: 96px 24px; }
-    .sec--gray { background: var(--c-bg-alt); }
-    .sec--dark { background: var(--c-navy); color: #fff; }
-    .sec__eyebrow {
-      font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
-      color: var(--c-red); margin-bottom: 12px;
+    /* ── TICKER ── */
+    .ticker {
+      background: var(--steel);
+      border-top: 1px solid var(--mist); border-bottom: 1px solid var(--mist);
+      padding: 24px 0; overflow: hidden;
     }
-    .sec__eyebrow--light { color: #fb7185; }
-    .sec__h2 {
-      font-size: clamp(26px, 4vw, 42px); font-weight: 800;
-      letter-spacing: -1px; line-height: 1.15; margin-bottom: 14px;
+    .ticker__inner { display: flex; gap: 0; }
+    .ticker__track {
+      display: flex; gap: 60px; align-items: center; white-space: nowrap;
+      animation: ticker-scroll 28s linear infinite;
     }
-    .sec__p {
-      font-size: 17px; color: var(--c-text2); max-width: 520px;
-      line-height: 1.65; margin-bottom: 48px;
-    }
-    .sec__p--light { color: rgba(255,255,255,.5); }
-    .sec--center { text-align: center; }
-    .sec--center .sec__p { margin-left: auto; margin-right: auto; }
+    @keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .ticker__item { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .ticker__item-label { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--fog); }
+    .ticker__item-val { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--copper); letter-spacing: .06em; }
+    .ticker__sep { color: var(--mist); font-size: 20px; }
 
-    /* ============================================================
-       PAIN CARDS
-       ============================================================ */
-    .pain-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    /* ── STAT STRIP ── */
+    .stats {
+      padding: 72px 0;
+      background: var(--ink);
+      border-bottom: 1px solid var(--mist);
     }
-    .pain-card {
-      background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius);
-      padding: 24px; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
-    }
-    .pain-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-l); }
-    .pain-card__emoji { font-size: 28px; margin-bottom: 12px; display: block; }
-    .pain-card__quote {
-      font-size: 14px; color: var(--c-text2); font-style: italic;
-      line-height: 1.7; margin-bottom: 14px;
-      border-left: 3px solid var(--c-red); padding-left: 14px;
-    }
-    .pain-card__src {
-      font-size: 11px; font-weight: 700; color: var(--c-text3);
-      letter-spacing: .04em; text-transform: uppercase;
-    }
-
-    /* ============================================================
-       FEATURES
-       ============================================================ */
-    .feat-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
-    }
-    .feat-card {
-      padding: 28px 24px; border-radius: var(--radius);
-      border: 1px solid var(--c-border);
-      transition: border-color var(--dur), box-shadow var(--dur);
-    }
-    .feat-card:hover { border-color: var(--c-red); box-shadow: 0 0 0 3px rgba(196,30,58,.06); }
-    .feat-card__icon {
-      width: 44px; height: 44px; background: rgba(196,30,58,.07); border-radius: 10px;
-      display: grid; place-items: center; font-size: 20px; margin-bottom: 16px;
-    }
-    .feat-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-    .feat-card p  { font-size: 13px; color: var(--c-text2); line-height: 1.65; }
-    .tag-ai {
-      display: inline-block; background: rgba(196,30,58,.08); color: var(--c-red);
-      font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
-      padding: 2px 7px; border-radius: 4px;
-    }
-    .tag-new {
-      display: inline-block; background: rgba(22,163,74,.08); color: var(--c-green);
-      font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
-      padding: 2px 7px; border-radius: 4px;
-    }
-
-    /* ============================================================
-       COMPARE TABLE
-       ============================================================ */
-    .table-scroll {
-      display: block; width: 100%;
-      overflow-x: scroll; -webkit-overflow-scrolling: touch;
-      border-radius: var(--radius); box-shadow: var(--shadow-m);
-    }
-    .cmp { border-collapse: collapse; min-width: 560px; width: max-content; table-layout: auto; }
-    .cmp thead { background: var(--c-navy); }
-    .cmp th {
-      padding: 12px 14px; text-align: left;
-      font-size: 11px; font-weight: 700; color: rgba(255,255,255,.55); letter-spacing: .04em;
-      white-space: nowrap;
-    }
-    .cmp th.cmp--hl { color: #fff; font-size: 13px; }
-    .cmp td {
-      padding: 11px 14px; font-size: 12.5px; color: var(--c-text2);
-      border-bottom: 1px solid var(--c-border-l); background: #fff;
-      white-space: nowrap;
-    }
-    .cmp td:first-child { font-weight: 600; color: var(--c-text); }
-    .cmp td.cmp--hl { background: rgba(196,30,58,.03); font-weight: 700; }
-    .cmp tr:last-child td { border-bottom: none; }
-    .t-yes { color: var(--c-green); font-weight: 700; }
-    .t-no  { color: var(--c-err); }
-    .t-mid { color: var(--c-amber); }
-
-    /* ============================================================
-       PRICING
-       ============================================================ */
-    .price-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 16px; align-items: start;
-    }
-    .price-card {
-      border: 1.5px solid var(--c-border); border-radius: var(--radius);
-      padding: 28px 22px; background: #fff; position: relative;
-      transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
-    }
-    .price-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-l); }
-    .price-card--pop { border-color: var(--c-red); box-shadow: 0 0 0 3px rgba(196,30,58,.1); }
-    .price-card__pop {
-      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-      background: var(--c-red); color: #fff;
-      font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-      padding: 4px 14px; border-radius: 100px; white-space: nowrap;
-    }
-    .price-card__tier {
-      font-size: 11px; font-weight: 700; letter-spacing: .12em;
-      text-transform: uppercase; color: var(--c-text3); margin-bottom: 6px;
-    }
-    .price-card__amount { font-size: 44px; font-weight: 900; letter-spacing: -2px; line-height: 1; }
-    .price-card__amount small { font-size: 16px; font-weight: 500; color: var(--c-text3); letter-spacing: 0; }
-    .price-card__desc { font-size: 13px; color: var(--c-text2); margin: 10px 0 20px; line-height: 1.55; }
-    .price-card__btn { margin-bottom: 20px; }
-    .price-card__list { display: flex; flex-direction: column; gap: 8px; }
-    .price-card__list li {
-      font-size: 13px; color: var(--c-text2);
-      display: flex; align-items: flex-start; gap: 8px;
-    }
-    .price-card__list li::before {
-      content: '✓'; color: var(--c-green); font-weight: 800; flex-shrink: 0; margin-top: 1px;
-    }
-    .price-card__foot { font-size: 11px; color: var(--c-text3); text-align: center; margin-top: 16px; }
-
-    /* ============================================================
-       PLEDGE
-       ============================================================ */
-    .pledge-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
-    }
-    .pledge-card {
-      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
-      border-radius: var(--radius); padding: 24px 20px;
-    }
-    .pledge-card__emoji { font-size: 28px; display: block; margin-bottom: 14px; }
-    .pledge-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
-    .pledge-card p  { font-size: 13px; color: rgba(255,255,255,.45); line-height: 1.65; }
-
-    /* ============================================================
-       FAQ
-       ============================================================ */
-    .faq { max-width: 700px; margin: 0 auto; }
-    .faq__item { border: 1px solid var(--c-border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; }
-    .faq__q {
-      width: 100%; text-align: left; padding: 18px 22px;
-      background: #fff; border: none; font-family: inherit;
-      font-size: 15px; font-weight: 600; color: var(--c-text);
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    .stats__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--mist); border: 1px solid var(--mist); border-radius: var(--radius); overflow: hidden; }
+    .stat {
+      background: var(--steel); padding: 36px 28px; text-align: center;
       transition: background var(--dur);
     }
-    .faq__q:hover { background: var(--c-bg-alt); }
-    .faq__arrow {
-      width: 20px; height: 20px; flex-shrink: 0;
-      transition: transform .3s var(--ease); color: var(--c-text3);
+    .stat:hover { background: var(--gun); }
+    .stat__num {
+      font-family: 'Bebas Neue', sans-serif; font-size: 56px; line-height: 1;
+      background: linear-gradient(135deg, var(--copper), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-    .faq__item.open .faq__arrow { transform: rotate(180deg); }
-    .faq__a {
-      overflow: hidden; max-height: 0;
-      transition: max-height .4s var(--ease);
-    }
-    .faq__item.open .faq__a { max-height: 280px; }
-    .faq__a-inner {
-      padding: 0 22px 20px; font-size: 14px;
-      color: var(--c-text2); line-height: 1.75;
-    }
+    .stat__label { font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--fog); margin-top: 6px; }
 
-    /* ============================================================
-       FINAL CTA
-       ============================================================ */
+    /* ── SECTION BASE ── */
+    .sec { padding: 96px 0; }
+    .sec--alt { background: var(--steel); }
+    .sec--dark { background: var(--ink); }
+    .sec__eyebrow {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+      letter-spacing: .14em; text-transform: uppercase; color: var(--copper);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 10px;
+    }
+    .sec__eyebrow::before { content: '//'; color: var(--fog); }
+    .sec__h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(42px, 5vw, 66px);
+      line-height: 1; letter-spacing: .03em; color: var(--ice);
+    }
+    .sec__p { font-size: 17px; color: var(--fog); line-height: 1.75; margin-top: 16px; max-width: 560px; }
+
+    /* ── PAIN POINTS ── */
+    .pain { padding: 80px 0; background: var(--gun); }
+    .pain__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--mist); margin-top: 56px; border: 1px solid var(--mist); border-radius: var(--radius); overflow: hidden; }
+    .pain-card {
+      background: var(--steel); padding: 32px 28px;
+      transition: background var(--dur);
+      position: relative; overflow: hidden;
+    }
+    .pain-card::after {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: var(--copper); transform: scaleY(0); transform-origin: bottom; transition: transform .3s var(--ease);
+    }
+    .pain-card:hover { background: var(--gun); }
+    .pain-card:hover::after { transform: scaleY(1); }
+    .pain-card__icon { font-size: 28px; margin-bottom: 16px; }
+    .pain-card__h { font-size: 16px; font-weight: 700; color: var(--ice); margin-bottom: 8px; }
+    .pain-card__p { font-size: 14px; color: var(--fog); line-height: 1.6; }
+
+    /* ── FEATURES ── */
+    .feat__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
+    .feat-card {
+      background: var(--steel);
+      border: 1px solid var(--mist);
+      border-radius: var(--radius);
+      padding: 28px;
+      transition: border-color .25s, transform .25s, box-shadow .25s;
+      position: relative; overflow: hidden;
+    }
+    .feat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--copper), transparent);
+      transform: scaleX(0); transition: transform .35s var(--ease);
+    }
+    .feat-card:hover { border-color: var(--copper); transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+    .feat-card:hover::before { transform: scaleX(1); }
+    .feat-card__icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: rgba(200,100,26,.12); border: 1px solid rgba(200,100,26,.2);
+      display: grid; place-items: center; margin-bottom: 18px;
+    }
+    .feat-card__icon svg { width: 20px; height: 20px; stroke: var(--copper); }
+    .feat-card__tag {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+      letter-spacing: .1em; text-transform: uppercase; color: var(--copper); margin-bottom: 8px;
+    }
+    .feat-card__h { font-size: 16px; font-weight: 700; color: var(--ice); margin-bottom: 8px; }
+    .feat-card__p { font-size: 13px; color: var(--fog); line-height: 1.65; }
+    .feat-card--wide { grid-column: span 2; }
+
+    /* ── COMPLIANCE CALLOUT ── */
+    .compliance {
+      background: var(--gun); border: 1px solid var(--mist);
+      border-radius: var(--radius); padding: 48px 40px; margin-top: 24px;
+      position: relative; overflow: hidden;
+    }
+    .compliance::before {
+      content: 'ATF'; position: absolute; right: -20px; top: -30px;
+      font-family: 'Bebas Neue', sans-serif; font-size: 200px; color: rgba(200,100,26,.04);
+      pointer-events: none; line-height: 1; letter-spacing: .05em;
+    }
+    .compliance__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+    .compliance__checks { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+    .compliance__check {
+      display: flex; align-items: flex-start; gap: 12px;
+      font-size: 14px; color: var(--fog); line-height: 1.5;
+    }
+    .compliance__check::before {
+      content: '→'; color: var(--copper); font-weight: 700; flex-shrink: 0; margin-top: 1px;
+    }
+    .compliance__score {
+      text-align: center;
+      background: var(--steel); border: 1px solid var(--mist); border-radius: var(--radius);
+      padding: 32px; position: relative;
+    }
+    .compliance__score-ring {
+      width: 120px; height: 120px; margin: 0 auto 16px;
+      border-radius: 50%; padding: 12px;
+      background: conic-gradient(var(--copper) 270deg, var(--mist) 270deg);
+      display: grid; place-items: center;
+    }
+    .compliance__score-inner {
+      width: 100%; height: 100%; border-radius: 50%;
+      background: var(--steel); display: grid; place-items: center;
+      flex-direction: column;
+    }
+    .compliance__score-num {
+      font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--copper); line-height: 1;
+    }
+    .compliance__score-sub { font-size: 10px; color: var(--fog); letter-spacing: .08em; text-transform: uppercase; }
+    .compliance__score-label { font-size: 13px; color: var(--fog); }
+
+    /* ── PRICING ── */
+    .price__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
+    .price-card {
+      background: var(--steel); border: 1px solid var(--mist); border-radius: var(--radius);
+      padding: 32px; position: relative; transition: border-color .25s, transform .25s;
+    }
+    .price-card:hover { border-color: var(--copper); transform: translateY(-4px); }
+    .price-card--featured {
+      border-color: var(--copper);
+      box-shadow: 0 0 60px rgba(200,100,26,.2);
+    }
+    .price-card--featured::before {
+      content: 'MOST POPULAR';
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--copper); color: #fff;
+      font-size: 10px; font-weight: 700; letter-spacing: .12em;
+      padding: 4px 14px; border-radius: 20px;
+    }
+    .price-card__name {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;
+      letter-spacing: .1em; text-transform: uppercase; color: var(--copper); margin-bottom: 16px;
+    }
+    .price-card__price {
+      font-family: 'Bebas Neue', sans-serif; font-size: 62px; color: var(--ice); line-height: 1; margin-bottom: 4px;
+    }
+    .price-card__period { font-size: 13px; color: var(--fog); margin-bottom: 24px; }
+    .price-card__divider { height: 1px; background: var(--mist); margin-bottom: 24px; }
+    .price-card__features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+    .price-card__feat {
+      display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--fog); line-height: 1.5;
+    }
+    .price-card__feat::before { content: '✓'; color: var(--copper); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .price-card__feat--no { color: #3A4A60; }
+    .price-card__feat--no::before { content: '×'; color: #3A4A60; }
+    .price-card__desc { font-size: 12px; color: var(--fog); margin-top: 12px; line-height: 1.5; }
+
+    /* ── TRUST BAND ── */
+    .trust {
+      padding: 60px 0; background: var(--ink); border-top: 1px solid var(--mist); border-bottom: 1px solid var(--mist);
+    }
+    .trust__label { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--fog); text-align: center; margin-bottom: 32px; }
+    .trust__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .trust__item {
+      background: var(--steel); border: 1px solid var(--mist); border-radius: var(--radius-sm);
+      padding: 22px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+      transition: border-color .25s;
+    }
+    .trust__item:hover { border-color: var(--copper); }
+    .trust__item-icon { font-size: 24px; }
+    .trust__item-name { font-size: 12px; font-weight: 700; color: var(--ice); letter-spacing: .04em; }
+    .trust__item-desc { font-size: 11px; color: var(--fog); line-height: 1.5; }
+
+    /* ── DISTRIBUTORS ── */
+    .dist {
+      background: var(--gun); padding: 48px 0;
+    }
+    .dist__label { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--fog); text-align: center; margin-bottom: 28px; }
+    .dist__row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .dist__tag {
+      background: var(--steel); border: 1px solid var(--mist); border-radius: var(--radius-sm);
+      padding: 10px 20px; font-size: 13px; font-weight: 600; color: var(--fog); letter-spacing: .02em;
+      transition: border-color .2s, color .2s;
+    }
+    .dist__tag:hover { border-color: var(--copper); color: var(--ice); }
+
+    /* ── COMPARISON TABLE ── */
+    .compare { padding: 80px 0; background: var(--ink); }
+    .table-scroll { overflow-x: auto; margin-top: 48px; border: 1px solid var(--mist); border-radius: var(--radius); }
+    table { width: 100%; border-collapse: collapse; min-width: 640px; }
+    thead { background: var(--gun); }
+    th {
+      padding: 14px 20px; text-align: left;
+      font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--fog);
+      border-bottom: 1px solid var(--mist);
+    }
+    th:first-child { color: var(--ice); font-size: 12px; }
+    td {
+      padding: 14px 20px; font-size: 14px; color: var(--fog);
+      border-bottom: 1px solid rgba(42,58,82,.5);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--gun); }
+    td:first-child { font-weight: 600; color: var(--ice); font-size: 13px; }
+    .tck { color: var(--copper); font-weight: 700; }
+    .tcx { color: #2A3A52; }
+    .th-bs { color: var(--copper) !important; }
+
+    /* ── PLEDGE / SECURITY ── */
+    .pledge { padding: 80px 0; background: var(--gun); }
+    .pledge__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; margin-top: 48px; }
+    .pledge__items { display: flex; flex-direction: column; gap: 20px; }
+    .pledge__item { display: flex; gap: 18px; align-items: flex-start; }
+    .pledge__item-icon {
+      width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0;
+      background: rgba(200,100,26,.1); border: 1px solid rgba(200,100,26,.2);
+      display: grid; place-items: center;
+    }
+    .pledge__item-icon svg { width: 18px; height: 18px; stroke: var(--copper); }
+    .pledge__item-h { font-size: 15px; font-weight: 700; color: var(--ice); margin-bottom: 4px; }
+    .pledge__item-p { font-size: 13px; color: var(--fog); line-height: 1.6; }
+    .pledge__right { background: var(--steel); border: 1px solid var(--mist); border-radius: var(--radius); padding: 36px; }
+    .pledge__founder-h { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: .05em; color: var(--ice); margin-bottom: 16px; }
+    .pledge__founder-p { font-size: 14px; color: var(--fog); line-height: 1.75; margin-bottom: 12px; }
+    .pledge__founder-sig { font-size: 13px; color: var(--copper); font-weight: 600; }
+
+    /* ── FAQ ── */
+    .faq__list { display: flex; flex-direction: column; gap: 0; margin-top: 48px; border: 1px solid var(--mist); border-radius: var(--radius); overflow: hidden; }
+    .faq__item { border-bottom: 1px solid var(--mist); }
+    .faq__item:last-child { border-bottom: none; }
+    .faq__q {
+      width: 100%; background: var(--steel); border: none; color: var(--ice);
+      padding: 20px 24px; text-align: left; display: flex; justify-content: space-between; align-items: center;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: background var(--dur);
+      gap: 16px;
+    }
+    .faq__q:hover { background: var(--gun); }
+    .faq__item.open .faq__q { color: var(--copper); }
+    .faq__arrow { width: 18px; height: 18px; flex-shrink: 0; stroke: var(--fog); transition: transform .3s var(--ease); }
+    .faq__item.open .faq__arrow { transform: rotate(180deg); stroke: var(--copper); }
+    .faq__a { max-height: 0; overflow: hidden; transition: max-height .4s var(--ease); }
+    .faq__item.open .faq__a { max-height: 300px; }
+    .faq__a-inner { padding: 0 24px 20px; font-size: 14px; color: var(--fog); line-height: 1.75; background: var(--gun); }
+
+    /* ── CTA FINAL ── */
     .cta-final {
-      background: linear-gradient(135deg, var(--c-red) 0%, #7f0a1d 100%);
-      color: #fff; text-align: center; padding: 100px 24px;
+      padding: 100px 28px; text-align: center;
+      background: var(--ink); position: relative; overflow: hidden;
     }
+    .cta-final::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 70% at 50% 50%, rgba(200,100,26,.1) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .cta-final .grid-bg { position: absolute; inset: 0; }
+    .cta-final__inner { position: relative; z-index: 1; }
     .cta-final h2 {
-      font-size: clamp(26px, 5vw, 50px); font-weight: 900;
-      letter-spacing: -1.5px; margin-bottom: 14px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(48px, 6vw, 80px);
+      color: var(--ice); letter-spacing: .03em; line-height: 1;
     }
-    .cta-final p { font-size: 17px; opacity: .8; max-width: 460px; margin: 0 auto 36px; }
-    .cta-final__btns { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
-    .cta-final__fine { margin-top: 18px; font-size: 12px; opacity: .4; }
+    .cta-final p { font-size: 17px; color: var(--fog); margin-top: 16px; }
+    .cta-final__btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 36px; }
+    .cta-final__fine { font-size: 12px; color: var(--fog); margin-top: 20px; letter-spacing: .04em; }
 
-    /* ============================================================
-       FOOTER
-       ============================================================ */
-    .footer { background: var(--c-navy); padding: 64px 24px 32px; }
+    /* ── ABOUT ── */
+    .about { padding: 80px 0; background: var(--steel); border-top: 1px solid var(--mist); }
+
+    /* ── FOOTER ── */
+    .footer {
+      background: var(--ink); padding: 60px 0 0;
+      border-top: 1px solid var(--mist);
+    }
     .footer__grid {
-      max-width: var(--mw); margin: 0 auto;
-      display: grid; grid-template-columns: 2.2fr 1fr 1fr 1fr; gap: 48px;
-      padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,.07);
+      max-width: var(--mw); margin: 0 auto; padding: 0 28px 48px;
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
     }
-    .footer__brand p {
-      font-size: 13px; color: rgba(255,255,255,.4); margin-top: 14px;
-      max-width: 260px; line-height: 1.7;
-    }
+    .footer__brand p { font-size: 13px; color: var(--fog); margin-top: 14px; line-height: 1.7; }
     .footer__tag {
       display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(196,30,58,.12); border: 1px solid rgba(196,30,58,.22);
-      color: #fb7185; padding: 4px 12px; border-radius: 100px;
-      font-size: 11px; font-weight: 600; margin-top: 16px;
+      margin-top: 16px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--copper); background: rgba(200,100,26,.08); border: 1px solid rgba(200,100,26,.2);
+      padding: 5px 12px; border-radius: 4px;
     }
-    .footer__col h4 {
-      font-size: 11px; font-weight: 700; color: #fff;
-      letter-spacing: .1em; text-transform: uppercase; margin-bottom: 16px;
-    }
-    .footer__col ul { display: flex; flex-direction: column; gap: 10px; }
-    .footer__col a { font-size: 13px; color: rgba(255,255,255,.4); transition: color var(--dur); }
-    .footer__col a:hover { color: #fff; }
+    .footer__col h4 { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ice); margin-bottom: 20px; }
+    .footer__col li { margin-bottom: 10px; }
+    .footer__col a { font-size: 13px; color: var(--fog); transition: color var(--dur); }
+    .footer__col a:hover { color: var(--copper); }
     .footer__bottom {
-      max-width: var(--mw); margin: 28px auto 0;
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 12px;
-      font-size: 12px; color: rgba(255,255,255,.25);
+      max-width: var(--mw); margin: 0 auto; padding: 20px 28px;
+      border-top: 1px solid var(--mist);
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
     }
-    .footer__bottom-links { display: flex; gap: 18px; }
-    .footer__bottom-links a { color: rgba(255,255,255,.25); transition: color var(--dur); }
-    .footer__bottom-links a:hover { color: rgba(255,255,255,.6); }
+    .footer__bottom span { font-size: 12px; color: var(--fog); }
+    .footer__bottom-links { display: flex; gap: 20px; }
+    .footer__bottom-links a { font-size: 12px; color: var(--fog); transition: color var(--dur); }
+    .footer__bottom-links a:hover { color: var(--copper); }
 
-    /* ============================================================
-       MODAL
-       ============================================================ */
+    /* ── MODALS ── */
     .overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.65);
-      z-index: 2000; display: flex; align-items: center; justify-content: center;
-      padding: 24px;
-      opacity: 0; visibility: hidden;
-      transition: opacity .25s var(--ease), visibility .25s;
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(6,8,15,.85); backdrop-filter: blur(12px);
+      display: none; align-items: center; justify-content: center; padding: 20px;
     }
-    .overlay.open { opacity: 1; visibility: visible; }
+    .overlay.open { display: flex; }
     .modal {
-      background: #fff; border-radius: 16px; padding: 36px 32px;
-      max-width: 420px; width: 100%; position: relative;
-      transform: translateY(20px) scale(.97);
-      transition: transform .3s var(--ease);
-      box-shadow: 0 32px 80px rgba(0,0,0,.3);
+      background: var(--steel); border: 1px solid var(--mist); border-radius: 14px;
+      padding: 40px 36px; width: 100%; max-width: 460px;
+      max-height: 90vh; overflow-y: auto; position: relative;
+      box-shadow: 0 40px 120px rgba(0,0,0,.7), 0 0 0 1px rgba(200,100,26,.1);
     }
-    .overlay.open .modal { transform: translateY(0) scale(1); }
+    .modal::before {
+      content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--copper), transparent);
+    }
     .modal__close {
-      position: absolute; top: 14px; right: 14px;
-      width: 34px; height: 34px; border-radius: 50%;
-      background: var(--c-bg-alt); border: none;
-      display: grid; place-items: center;
-      transition: background var(--dur);
+      position: absolute; top: 16px; right: 16px;
+      background: var(--gun); border: 1px solid var(--mist); border-radius: 6px;
+      width: 32px; height: 32px; display: grid; place-items: center; color: var(--fog);
+      transition: color var(--dur), border-color var(--dur);
     }
-    .modal__close:hover { background: var(--c-border); }
-    .modal__close svg { width: 16px; height: 16px; color: var(--c-text2); }
-    .modal h2 { font-size: 22px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 6px; }
-    .modal p.modal__sub { font-size: 14px; color: var(--c-text2); margin-bottom: 24px; line-height: 1.6; }
-    .modal__form { display: flex; flex-direction: column; gap: 12px; }
+    .modal__close:hover { color: var(--ice); border-color: var(--copper); }
+    .modal__close svg { width: 14px; height: 14px; }
+    .modal h2 {
+      font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: .05em;
+      color: var(--ice); margin-bottom: 4px;
+    }
+    .modal__sub { font-size: 14px; color: var(--fog); margin-bottom: 24px; line-height: 1.5; }
+    .modal__form { display: flex; flex-direction: column; gap: 10px; }
     .modal__input {
-      width: 100%; padding: 14px 16px; border: 1.5px solid var(--c-border);
-      border-radius: var(--radius-sm); font-size: 15px; font-family: inherit;
-      color: var(--c-text); outline: none; transition: border-color var(--dur);
-      background: #fff; -webkit-appearance: none; appearance: none;
+      background: var(--gun); border: 1px solid var(--mist); border-radius: var(--radius-sm);
+      color: var(--ice); padding: 12px 14px; font-size: 14px; outline: none; width: 100%;
+      transition: border-color var(--dur);
     }
-    .modal__input:focus { border-color: var(--c-red); }
-    .modal__input::placeholder { color: var(--c-text3); }
-    select.modal__input { color: var(--c-text3); }
-    select.modal__input:valid { color: var(--c-text); }
-    .modal__fine { font-size: 11px; color: var(--c-text3); text-align: center; margin-top: 4px; }
-    .modal__fine a { color: var(--c-red); font-weight: 600; }
-
-    /* Success state */
-    .modal__success {
-      display: none; text-align: center; padding: 16px 0;
-    }
+    .modal__input::placeholder { color: var(--fog); }
+    .modal__input:focus { border-color: var(--copper); box-shadow: 0 0 0 3px rgba(200,100,26,.12); }
+    .modal__input option { background: var(--gun); }
+    .modal__fine { font-size: 12px; color: var(--fog); text-align: center; margin-top: 12px; line-height: 1.5; }
+    .modal__fine a { color: var(--copper); }
+    .modal__success { display: none; text-align: center; padding: 24px 0; }
     .modal__success.show { display: block; }
-    .modal__success-emoji { font-size: 52px; margin-bottom: 16px; display: block; }
-    .modal__success h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-    .modal__success p { font-size: 14px; color: var(--c-text2); line-height: 1.6; }
+    .modal__success-emoji { font-size: 48px; display: block; margin-bottom: 16px; }
+    .modal__success h3 { font-size: 22px; font-weight: 700; color: var(--ice); margin-bottom: 8px; }
+    .modal__success p { font-size: 14px; color: var(--fog); }
 
-    /* ============================================================
-       RESPONSIVE – TABLET
-       ============================================================ */
+    /* ── REVEAL ANIMATIONS ── */
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .55s var(--ease), transform .55s var(--ease); }
+    .reveal-d1 { transition-delay: .1s; }
+    .reveal-d2 { transition-delay: .2s; }
+    .reveal-d3 { transition-delay: .3s; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ── RESPONSIVE ── */
     @media (max-width: 1024px) {
-      .price-grid   { grid-template-columns: repeat(2, 1fr); }
-      .pledge-grid   { grid-template-columns: repeat(2, 1fr); }
-      .feat-grid     { grid-template-columns: repeat(2, 1fr); }
-      .footer__grid  { grid-template-columns: 1fr 1fr; }
-      .footer__brand { grid-column: 1 / -1; }
-    }
-
-    /* ============================================================
-       RESPONSIVE – MOBILE
-       ============================================================ */
-    @media (max-width: 768px) {
-      .nav__links  { display: none; }
-      .nav__right .btn--ghost { display: none; }
-      .nav__right .btn--red   { display: none; }
-      .nav__hamburger { display: block; }
-
-      .hero { padding: 120px 20px 60px; }
-      .sec  { padding: 64px 20px; }
-
-      .pain-grid  { grid-template-columns: 1fr; }
-      .feat-grid  { grid-template-columns: 1fr; }
-
-      .sec__p { margin-bottom: 32px; }
-      .trust  { gap: 12px 20px; }
-
-      .modal { padding: 28px 20px; }
+      .hero__inner { grid-template-columns: 1fr; gap: 48px; }
+      .hero__card { max-width: 480px; }
+      .stats__grid { grid-template-columns: repeat(2, 1fr); }
+      .feat__grid { grid-template-columns: repeat(2, 1fr); }
+      .feat-card--wide { grid-column: span 1; }
+      .price__grid { grid-template-columns: 1fr 1fr; }
+      .compliance__grid { grid-template-columns: 1fr; }
+      .pledge__grid { grid-template-columns: 1fr; }
+      .pain__grid { grid-template-columns: 1fr 1fr; }
+      .trust__grid { grid-template-columns: repeat(2, 1fr); }
+      .footer__grid { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 640px) {
-      .price-grid    { grid-template-columns: 1fr; }
-      .pledge-grid   { grid-template-columns: 1fr; }
-      .footer__grid  { grid-template-columns: 1fr; gap: 32px; }
-
-      .hero__btns,
-      .cta-final__btns { flex-direction: column; align-items: stretch; }
-      .hero__btns .btn,
-      .cta-final__btns .btn { text-align: center; }
-
-      .trust { flex-direction: column; align-items: flex-start; padding-left: 24px; gap: 10px; }
-
-      .cta-final { padding: 72px 20px; }
+      .nav__links { display: none; }
+      .nav__right .btn--ghost { display: none; }
+      .nav__hamburger { display: flex; }
+      .hero__h1 { font-size: 64px; }
+      .stats__grid { grid-template-columns: repeat(2, 1fr); }
+      .feat__grid { grid-template-columns: 1fr; }
+      .pain__grid { grid-template-columns: 1fr; }
+      .price__grid { grid-template-columns: 1fr; }
+      .trust__grid { grid-template-columns: 1fr 1fr; }
+      .footer__grid { grid-template-columns: 1fr; }
+      .modal { padding: 28px 22px; }
     }
-
-    /* Body scroll lock */
-    body.no-scroll { overflow: hidden; }
-
-    /* ============================================================
-       DARK MODE
-       ============================================================ */
-    [data-theme="dark"] body { background:#0f172a; color:#e2e8f0; }
-    [data-theme="dark"] .sec { background:#0f172a; }
-    [data-theme="dark"] .sec--gray { background:#1e293b; }
-    [data-theme="dark"] .sec__h2 { color:#f1f5f9; }
-    [data-theme="dark"] .sec__p { color:#94a3b8; }
-    [data-theme="dark"] .sec__eyebrow { color:#60a5fa; }
-
-    /* Nav */
-    [data-theme="dark"] .nav { background:rgba(15,23,42,0.97); border-bottom:1px solid #1e293b; }
-    [data-theme="dark"] .nav__links a { color:#cbd5e1; }
-    [data-theme="dark"] .mobile-nav { background:#0f172a; }
-    [data-theme="dark"] .mobile-nav__link { color:#cbd5e1; border-color:#1e293b; }
-
-    /* Pain cards */
-    [data-theme="dark"] .pain-card { background:#1e293b; border-color:#334155; }
-    [data-theme="dark"] .pain-card__quote { color:#cbd5e1; }
-    [data-theme="dark"] .pain-card__src { color:#64748b; }
-
-    /* Feature cards */
-    [data-theme="dark"] .feat-card { background:#1e293b; border-color:#334155; }
-    [data-theme="dark"] .feat-card h3 { color:#f1f5f9; }
-    [data-theme="dark"] .feat-card p { color:#94a3b8; }
-
-    /* Pricing cards */
-    [data-theme="dark"] .price-card { background:#1e293b; border-color:#334155; }
-    [data-theme="dark"] .price-card__tier { color:#94a3b8; }
-    [data-theme="dark"] .price-card__desc { color:#94a3b8; }
-    [data-theme="dark"] .price-card__list li { color:#cbd5e1; }
-    [data-theme="dark"] .price-card__foot { color:#64748b; }
-    [data-theme="dark"] .price-card__amount small { color:#64748b; }
-
-    /* FAQ — full fix */
-    [data-theme="dark"] .faq__item { border-color:#334155; background:#1e293b; }
-    [data-theme="dark"] .faq__q { background:#1e293b !important; color:#f1f5f9; }
-    [data-theme="dark"] .faq__q:hover { background:#243147 !important; }
-    [data-theme="dark"] .faq__arrow { color:#64748b; }
-    [data-theme="dark"] .faq__a { background:#1e293b; }
-    [data-theme="dark"] .faq__a-inner { color:#94a3b8; background:#1e293b; }
-
-    /* Comparison table — full fix */
-    [data-theme="dark"] .table-scroll { border-radius:10px; }
-    [data-theme="dark"] .cmp { background:#1e293b; }
-    [data-theme="dark"] .cmp th { background:#0f172a; color:#f1f5f9; }
-    [data-theme="dark"] .cmp thead th:first-child { background:#0f172a; }
-    [data-theme="dark"] .cmp td { background:#1e293b; color:#e2e8f0; border-color:#334155; }
-    [data-theme="dark"] .cmp td:first-child { color:#f1f5f9; }
-    [data-theme="dark"] .cmp tbody tr:nth-child(even) td { background:#172033; }
-    [data-theme="dark"] .cmp td.cmp--hl { background:rgba(196,30,58,.18) !important; }
-    [data-theme="dark"] .cmp th.cmp--hl { background:rgba(196,30,58,.35); }
-
-    /* Trust bar */
-    [data-theme="dark"] .trust__item { color:#94a3b8; }
-    [data-theme="dark"] .trust__check { background:rgba(34,197,94,.15); }
-
-    /* Footer */
-    [data-theme="dark"] .footer { background:#020617; color:#94a3b8; }
-    [data-theme="dark"] .footer__brand p { color:#64748b; }
-    [data-theme="dark"] .footer__col h4 { color:#f1f5f9; }
-    [data-theme="dark"] .footer__col a { color:#64748b; }
-    [data-theme="dark"] .footer__bottom { border-color:#1e293b; color:#475569; }
-
-    /* Modals */
-    [data-theme="dark"] .modal { background:#1e293b; color:#e2e8f0; }
-    [data-theme="dark"] .modal__input { background:#0f172a; border-color:#334155; color:#e2e8f0; }
-    [data-theme="dark"] .modal__input::placeholder { color:#475569; }
-    [data-theme="dark"] select.modal__input { color:#64748b; }
-    [data-theme="dark"] select.modal__input:valid { color:#e2e8f0; }
-    [data-theme="dark"] select.modal__input option { background:#1e293b; color:#e2e8f0; }
-    [data-theme="dark"] .modal__fine { color:#64748b; }
-    [data-theme="dark"] .overlay { background:rgba(0,0,0,0.7); }
-
-    /* Buttons */
-    [data-theme="dark"] .btn--ghost { border-color:#475569; color:#cbd5e1; }
-    [data-theme="dark"] .btn--ghost:hover { background:#1e293b; }
-    [data-theme="dark"] .btn--outline { color:#e2e8f0; border-color:#475569; }
-    [data-theme="dark"] .btn--outline:hover { background:rgba(255,255,255,.06); border-color:#64748b; }
-    [data-theme="dark"] .btn--white { color:#0f172a; } /* white btn stays dark text on white bg */
-
-    /* Theme toggle button */
-    .theme-btn {
-      background:none; border:1px solid rgba(255,255,255,0.25); border-radius:20px;
-      color:rgba(255,255,255,0.85); padding:5px 12px; font-size:13px; font-weight:500;
-      cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:5px;
-    }
-    .theme-btn:hover { background:rgba(255,255,255,0.1); }
-    [data-theme="dark"] .theme-btn { border-color:#475569; color:#94a3b8; }
-
-    /* ============================================================
-       SCROLL REVEAL ANIMATIONS
-       ============================================================ */
-    .reveal {
-      opacity:0; transform:translateY(30px);
-      transition:opacity .65s cubic-bezier(.22,1,.36,1), transform .65s cubic-bezier(.22,1,.36,1);
-    }
-    .reveal.visible { opacity:1; transform:translateY(0); }
-    .reveal-d1 { transition-delay:.08s; }
-    .reveal-d2 { transition-delay:.16s; }
-    .reveal-d3 { transition-delay:.24s; }
-    .reveal-d4 { transition-delay:.32s; }
   </style>
-  <!-- Vercel Analytics -->
-  <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
-  <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
-<!-- ────────────────────────────────────────────────────
-     EARLY ACCESS DISCLAIMER BANNER
-     ──────────────────────────────────────────────────── -->
-<div style="background:#1a1a2e;color:#facc15;text-align:center;padding:10px 16px;font-size:13px;font-weight:500;line-height:1.4;position:relative;z-index:9999;">
-  🚀 <strong>Beta Access</strong> — Join 40+ early dealers shaping BoundStack. Your feedback directly improves the product. <a href="#pricing" style="color:#facc15;text-decoration:underline;">Start free →</a>
-</div>
-
-<!-- ────────────────────────────────────────────────────
-     NAV
-     ──────────────────────────────────────────────────── -->
-<nav class="nav" id="nav">
+<!-- ── NAV ── -->
+<nav class="nav" id="top">
   <div class="nav__inner">
     <a href="#top" class="nav__logo">
       <div class="nav__logo-mark">
@@ -683,440 +642,589 @@
       </div>
       BoundStack
     </a>
-    <ul class="nav__links" id="navLinks">
-      <li><a href="#features">Features</a></li>
-      <li><a href="#compare">Compare</a></li>
-      <li><a href="#pricing">Pricing</a></li>
-      <li><a href="#faq">FAQ</a></li>
-    </ul>
+    <nav class="nav__links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#security">Security</a>
+      <a href="#faq">FAQ</a>
+      <a href="#about">About</a>
+    </nav>
     <div class="nav__right">
-      <button class="theme-btn" id="themeToggle" aria-label="Toggle theme">🌙 Dark</button>
-      <button class="btn btn--ghost" data-modal="signin">Sign In</button>
-      <button class="btn btn--red" data-modal="signup">Start Free →</button>
+      <button class="btn btn--ghost" style="font-size:12px;padding:9px 18px" data-modal="signin">Sign In</button>
+      <button class="btn btn--copper" style="font-size:12px;padding:9px 18px" data-modal="signup">Start Free</button>
     </div>
-    <button class="nav__hamburger" id="hamburger" aria-label="Toggle menu">
+    <button class="nav__hamburger" id="hamburger" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
   </div>
 </nav>
 
-<!-- Mobile menu -->
+<!-- Mobile Nav -->
 <div class="mobile-nav" id="mobileNav">
   <a href="#features" class="mobile-nav__link">Features</a>
-  <a href="#compare" class="mobile-nav__link">Compare</a>
   <a href="#pricing" class="mobile-nav__link">Pricing</a>
+  <a href="#security" class="mobile-nav__link">Security</a>
   <a href="#faq" class="mobile-nav__link">FAQ</a>
-  <a href="#pledge" class="mobile-nav__link">Our Pledge</a>
-  <button class="btn btn--ghost" data-modal="signin" style="margin-top:16px;text-align:center;border-color:rgba(255,255,255,.15)">Sign In</button>
-  <button class="btn btn--red" data-modal="signup" style="text-align:center;">Start Free — No Card Needed</button>
+  <a href="#about" class="mobile-nav__link">About</a>
+  <button class="btn btn--copper btn--full btn--lg" data-modal="signup">Start Free — No Card</button>
+  <button class="btn btn--steel btn--full" style="margin-top:10px" data-modal="signin">Sign In</button>
 </div>
 
-<div id="top"></div>
-
-<!-- ────────────────────────────────────────────────────
-     HERO
-     ──────────────────────────────────────────────────── -->
-<section class="hero">
-  <div class="hero__badge">
-    <div class="hero__badge-dot"></div>
-    Pro-2A · Cloud-Native · Never De-Platformed
-  </div>
-  <h1>FFL software that<br><span class="accent">actually works.</span></h1>
-  <p class="hero__sub">Cloud-based FFL management — A&D book, inventory, Form 4473, POS, and business records. Built to replace paper and overpriced software. Start free. No contracts.</p>
-  <div class="hero__btns">
-    <button class="btn btn--red btn--lg" data-modal="signup">Start Free — No Card Needed</button>
-    <a href="#features" class="btn btn--ghost btn--lg">See All Features</a>
-  </div>
-  <p class="hero__fine">Free forever plan available · 14-day Pro trial · Cancel anytime</p>
-  <div class="trust">
-    <div class="trust__item">
-      <div class="trust__check"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
-      Month-to-month only
+<!-- ── HERO ── -->
+<section class="hero" id="hero">
+  <div class="grid-bg"></div>
+  <div class="hero__inner">
+    <!-- Left -->
+    <div>
+      <div class="hero__badge">Now live · 14-day Pro trial</div>
+      <h1 class="hero__h1">FFL Software<br><em>Built to Pass</em><br>Inspection.</h1>
+      <p class="hero__sub">Cloud-native A&D bound book, Form 4473, POS, and ATF compliance — in one tool designed for independent dealers. Not your distributor's bloatware.</p>
+      <div class="hero__cta">
+        <button class="btn btn--copper btn--lg" data-modal="signup">Start Free — No Card Needed</button>
+        <button class="btn btn--ghost btn--lg" data-modal="demo">Book 15-min Demo</button>
+      </div>
+      <div class="hero__fine">
+        <span>Free forever</span>
+        <span>No contracts</span>
+        <span>Never de-platformed</span>
+      </div>
     </div>
-    <div class="trust__item">
-      <div class="trust__check"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
-      No hidden fees, ever
-    </div>
-    <div class="trust__item">
-      <div class="trust__check"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
-      Free ATF inspection report
-    </div>
-    <div class="trust__item">
-      <div class="trust__check"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
-      Works on any device
-    </div>
-    <div class="trust__item">
-      <div class="trust__check"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
-      Free data migration
-    </div>
-  </div>
-</section>
-
-<!-- ────────────────────────────────────────────────────
-     PAIN POINTS
-     ──────────────────────────────────────────────────── -->
-<section class="sec sec--gray" id="pain">
-  <div class="container">
-    <p class="sec__eyebrow">Sound familiar?</p>
-    <h2 class="sec__h2">We read 847 reviews of your current software.</h2>
-    <p class="sec__p">Here's what dealers on AR15.com, Capterra, and the FFL Dealer Network actually say.</p>
-    <div class="pain-grid">
-      <div class="pain-card">
-        <span class="pain-card__emoji emoji">😤</span>
-        <p class="pain-card__quote">"Called support 4 times this week. 45 minutes on hold then disconnected. They outsourced everything offshore and nobody knows the software."</p>
-        <div class="pain-card__src">FastBound user · Capterra</div>
-      </div>
-      <div class="pain-card">
-        <span class="pain-card__emoji emoji">🦕</span>
-        <p class="pain-card__quote">"It looks like it was designed in 2002. My employees refuse to use it. We still print forms by hand because it's faster."</p>
-        <div class="pain-card__src">Bravo user · AR15.com FFL forum</div>
-      </div>
-      <div class="pain-card">
-        <span class="pain-card__emoji emoji">💸</span>
-        <p class="pain-card__quote">"I'm paying $265/month across five different tools — bound book, POS, QuickBooks, texting, GunBroker. Nothing syncs."</p>
-        <div class="pain-card__src">Coreware user · FFL Dealer Network</div>
-      </div>
-      <div class="pain-card">
-        <span class="pain-card__emoji emoji">😰</span>
-        <p class="pain-card__quote">"ATF inspector showed up and my software crashed. Had to dig out paper records. Almost lost my license because I couldn't produce the A&D book."</p>
-        <div class="pain-card__src">Desktop system user · Defensive Carry</div>
-      </div>
-      <div class="pain-card">
-        <span class="pain-card__emoji emoji">📵</span>
-        <p class="pain-card__quote">"Can't check inventory from my phone at a gun show. Can't see what sold while I was out. Flying blind half the time."</p>
-        <div class="pain-card__src">FFL Dealer · The Firearms Forum</div>
-      </div>
-      <div class="pain-card">
-        <span class="pain-card__emoji emoji">🔒</span>
-        <p class="pain-card__quote">"3-year contract, raised prices twice. When I tried to cancel, they said my bound book data 'can't be exported.' I'm stuck."</p>
-        <div class="pain-card__src">Orchid eBound user · GunBroker forums</div>
-      </div>
+    <!-- Right — signup card -->
+    <div class="hero__card">
+      <div class="hero__card-title">Create Your Account</div>
+      <div class="hero__card-sub">Free plan · 14-day Pro trial · No card required</div>
+      <form class="hero__form" id="signupFormHero">
+        <input class="hero__input" type="text" placeholder="Your name" required autocomplete="name" />
+        <input class="hero__input" type="email" placeholder="Email address" required autocomplete="email" />
+        <input class="hero__input" type="password" placeholder="Password (min 6 chars)" required autocomplete="new-password" />
+        <input class="hero__input" type="text" placeholder="FFL number (optional)" />
+        <select class="hero__input">
+          <option value="" disabled selected>Currently using…</option>
+          <option value="fastbound">FastBound</option>
+          <option value="fflsafe">FFLSafe</option>
+          <option value="bravo">Bravo</option>
+          <option value="orchid">Orchid / eBound</option>
+          <option value="paper">Paper / nothing</option>
+          <option value="other">Other</option>
+        </select>
+        <select class="hero__input">
+          <option value="free" selected>Free plan — get started at no cost</option>
+          <option value="starter">Starter — $49/mo</option>
+          <option value="pro">Pro — $99/mo (14-day trial)</option>
+        </select>
+        <button type="submit" class="btn btn--copper btn--full btn--lg">Create Free Account →</button>
+      </form>
+      <p class="hero__card-fine">By signing up you agree to our <a href="/terms" style="color:var(--copper)">Terms</a> and <a href="/privacy" style="color:var(--copper)">Privacy Policy</a>.</p>
     </div>
   </div>
 </section>
 
-<!-- ────────────────────────────────────────────────────
-     FEATURES
-     ──────────────────────────────────────────────────── -->
-<section class="sec" id="features">
+<!-- ── TICKER ── -->
+<div class="ticker">
+  <div class="ticker__inner">
+    <div class="ticker__track" id="ticker1">
+      <div class="ticker__item"><span class="ticker__item-label">A&D Bound Book</span><span class="ticker__item-val">Compliant</span></div>
+      <span class="ticker__sep">·</span>
+      <div class="ticker__item"><span class="ticker__item-label">Form 4473</span><span class="ticker__item-val">Digital</span></div>
+      <span class="ticker__sep">·</span>
+      <div class="ticker__item"><span class="ticker__item-label">NICS Integration</span><span class="ticker__item-val">Ready</span></div>
+      <span class="ticker__sep">·</span>
+      <div class="ticker__item"><span class="ticker__item-label">3310.4 Alerts</span><span class="ticker__item-val">Auto</span></div>
+      <span class="ticker__sep">·</span>
+      <div class="ticker__item"><span class="ticker__item-label">ATF Inspection</span><span class="ticker__item-val">Audit-Ready</span></div>
+      <span class="ticker__sep">·</span>
+      <div class="ticker__item"><span class="ticker__item-label">Offline Mode</span><span class="ticker__item-val">Always On</span></div>
+      <span class="ticker__sep">·</span>
+      <div class="ticker__item"><span class="ticker__item-label">Pro-2A Platform</span><span class="ticker__item-val">Never De-Platformed</span></div>
+      <span class="ticker__sep">·</span>
+      <!-- duplicate for seamless loop -->
+      <div class="ticker__item"><span class="ticker__item-label">A&D Bound Book</span><span class="ticker__item-val">Compliant</span></div>
+      <span class="ticker__sep">·</span>
+      <div class="ticker__item"><span class="ticker__item-label">Form 4473</span><span class="ticker__item-val">Digital</span></div>
+      <span class="ticker__sep">·</span>
+      <div class="ticker__item"><span class="ticker__item-label">NICS Integration</span><span class="ticker__item-val">Ready</span></div>
+      <span class="ticker__sep">·</span>
+      <div class="ticker__item"><span class="ticker__item-label">3310.4 Alerts</span><span class="ticker__item-val">Auto</span></div>
+      <span class="ticker__sep">·</span>
+      <div class="ticker__item"><span class="ticker__item-label">ATF Inspection</span><span class="ticker__item-val">Audit-Ready</span></div>
+      <span class="ticker__sep">·</span>
+      <div class="ticker__item"><span class="ticker__item-label">Offline Mode</span><span class="ticker__item-val">Always On</span></div>
+      <span class="ticker__sep">·</span>
+      <div class="ticker__item"><span class="ticker__item-label">Pro-2A Platform</span><span class="ticker__item-val">Never De-Platformed</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STATS ── -->
+<section class="stats">
   <div class="container">
-    <p class="sec__eyebrow">Everything in one place</p>
-    <h2 class="sec__h2">Replace 5 tools with one.</h2>
-    <p class="sec__p">The average FFL dealer pays $265–$605/month across separate tools. BoundStack replaces all of them.</p>
-    <div class="feat-grid">
-      <div class="feat-card">
-        <div class="feat-card__icon emoji">📒</div>
-        <h3>Digital A&D Bound Book</h3>
-        <p>Cloud-based bound book covering all required fields under 27 CFR 478.125. Flags missing data before inspection. One-click printable report.</p>
+    <div class="stats__grid">
+      <div class="stat">
+        <div class="stat__num" data-count="2400">0</div>
+        <div class="stat__label">Firearms Tracked</div>
       </div>
-      <div class="feat-card">
-        <div class="feat-card__icon emoji">📝</div>
-        <h3>Digital Form 4473 <span class="tag-ai">AI</span></h3>
-        <p>E-signatures, auto-fill for returning customers, built-in NICS E-Check. 3 minutes per transfer, not 15.</p>
+      <div class="stat">
+        <div class="stat__num" data-count="99.9">0</div>
+        <div class="stat__label">% Uptime SLA</div>
       </div>
-      <div class="feat-card">
-        <div class="feat-card__icon emoji">🏪</div>
-        <h3>Point of Sale</h3>
-        <p>Full POS — serial tracking, consignment, layaway. Gun-friendly payment processing included.</p>
+      <div class="stat">
+        <div class="stat__num" data-count="5">0</div>
+        <div class="stat__label">Min Setup Time</div>
       </div>
-      <div class="feat-card">
-        <div class="feat-card__icon emoji">📦</div>
-        <h3>Smart Inventory</h3>
-        <p>Every firearm tracked from acquisition to disposition. Auto-sync with GunBroker, RSR, Lipsey's, Davidson's.</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-card__icon emoji">🛒</div>
-        <h3>Online Store <span class="tag-new">New</span></h3>
-        <p>GunBroker integration and a built-in storefront — without a Shopify account that can ban you.</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-card__icon emoji">📱</div>
-        <h3>Gun Show Mode</h3>
-        <p>Full mobile interface. Works offline. Syncs when you're back online. Process transfers from your phone.</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-card__icon emoji">🤖</div>
-        <h3>AI Compliance Check <span class="tag-ai">AI</span></h3>
-        <p>Scans your bound book for ATF violations before the inspector does. Catches errors automatically.</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-card__icon emoji">💬</div>
-        <h3>Customer Comms</h3>
-        <p>SMS and email for layaway pickups, special orders, and transfers. 2A-friendly, never censored.</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-card__icon emoji">📊</div>
-        <h3>Business Reporting</h3>
-        <p>Daily sales, top calibers, slow movers, consignment payouts — real reports replacing your spreadsheets.</p>
+      <div class="stat">
+        <div class="stat__num">$0</div>
+        <div class="stat__label">To Get Started</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ────────────────────────────────────────────────────
-     COMPARE
-     ──────────────────────────────────────────────────── -->
-<section class="sec sec--gray" id="compare">
+<!-- ── PAIN POINTS ── -->
+<section class="pain" id="pain">
   <div class="container">
-    <p class="sec__eyebrow">Head to head</p>
-    <h2 class="sec__h2">Honest comparison.</h2>
-    <p class="sec__p">How we stack up against the four most-used FFL tools.</p>
+    <div class="sec__eyebrow">The problem</div>
+    <h2 class="sec__h2">Every FFL Dealer<br>Knows This Pain.</h2>
+    <div class="pain__grid">
+      <div class="pain-card">
+        <div class="pain-card__icon">📋</div>
+        <div class="pain-card__h">Paper A&D books get lost</div>
+        <div class="pain-card__p">ATF inspectors aren't forgiving. Handwritten records, illegible entries, missing disposition dates — violations stack fast.</div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-card__icon">⏱️</div>
+        <div class="pain-card__h">4473 forms take forever</div>
+        <div class="pain-card__p">Manual paper forms, retyping info, waiting on fax confirmations. Your customer is standing at the counter for 45 minutes.</div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-card__icon">💰</div>
+        <div class="pain-card__h">Legacy software costs $300+/mo</div>
+        <div class="pain-card__p">Built for distributors, priced for distributors. Small shops pay enterprise prices for features they never use.</div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-card__icon">🏦</div>
+        <div class="pain-card__h">Payment processors drop FFLs</div>
+        <div class="pain-card__p">Stripe, Square, PayPal — all have de-platformed gun shops. One policy change and your POS is dead.</div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-card__icon">📶</div>
+        <div class="pain-card__h">No internet = no records</div>
+        <div class="pain-card__p">Gun shows, remote ranges, spotty rural service. If your software needs the cloud, your business stops without it.</div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-card__icon">🔍</div>
+        <div class="pain-card__h">Multi-handgun reports missed</div>
+        <div class="pain-card__p">ATF 3310.4 requires reporting two+ handguns to the same buyer within 5 days. Missing it is a federal violation.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section class="sec sec--dark" id="features">
+  <div class="container">
+    <div class="sec__eyebrow">The Solution</div>
+    <h2 class="sec__h2">One Tool.<br>Every Requirement.</h2>
+    <p class="sec__p">Built from the ground up for FFL compliance — not adapted from a generic SaaS template.</p>
+
+    <div class="feat__grid">
+      <!-- A&D Bound Book -->
+      <div class="feat-card feat-card--wide">
+        <div class="feat-card__tag">ATF 27 CFR 478.125</div>
+        <div class="feat-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <div class="feat-card__h">Digital A&D Bound Book</div>
+        <div class="feat-card__p">Cloud-native acquisition and disposition records with tamper-evident SHA-256 hash chain. Every entry timestamped, immutable, and inspection-ready. Export to ATF-compliant CSV any time. Offline capable — works without internet.</div>
+      </div>
+
+      <!-- Form 4473 -->
+      <div class="feat-card">
+        <div class="feat-card__tag">ATF Form 4473</div>
+        <div class="feat-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <div class="feat-card__h">Digital Form 4473</div>
+        <div class="feat-card__p">Complete Sections A–D digitally. AI pre-submit validation flags errors before they become violations. E-signature with legal audit trail.</div>
+      </div>
+
+      <!-- POS -->
+      <div class="feat-card">
+        <div class="feat-card__tag">Point of Sale</div>
+        <div class="feat-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        </div>
+        <div class="feat-card__h">Firearm-Friendly POS</div>
+        <div class="feat-card__p">Barcode scan, split tender, tax calculation, receipt print. Auto-links firearm sales to A&D dispositions. Never de-platformed.</div>
+      </div>
+
+      <!-- NICS -->
+      <div class="feat-card">
+        <div class="feat-card__tag">NICS / BGC</div>
+        <div class="feat-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="feat-card__h">NICS Background Check Log</div>
+        <div class="feat-card__p">Log NTN numbers, proceed/delay/deny outcomes, and retention dates. Synced to Form 4473 for zero duplicate entry.</div>
+      </div>
+
+      <!-- Multi-Sale -->
+      <div class="feat-card">
+        <div class="feat-card__tag">ATF 3310.4 / 3310.12</div>
+        <div class="feat-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="feat-card__h">Multi-Sale Auto-Alerts</div>
+        <div class="feat-card__p">Automatic detection when the same buyer purchases 2+ handguns or rifles within the federal reporting window. Flagged before you miss the deadline.</div>
+      </div>
+
+      <!-- Gun Show -->
+      <div class="feat-card">
+        <div class="feat-card__tag">Gun Show Mode</div>
+        <div class="feat-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="feat-card__h">Gun Show Tablet Mode</div>
+        <div class="feat-card__p">Full-screen tablet UI optimized for busy show floors. Offline queue syncs automatically when you reconnect. Works on any device.</div>
+      </div>
+
+      <!-- Import -->
+      <div class="feat-card">
+        <div class="feat-card__tag">Migration</div>
+        <div class="feat-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="feat-card__h">One-Click Data Migration</div>
+        <div class="feat-card__p">Import from FastBound, Orchid, Bravo, or any generic CSV. Dry-run preview before committing. Your old records, in BoundStack, in minutes.</div>
+      </div>
+
+      <!-- Readiness Score -->
+      <div class="feat-card feat-card--wide">
+        <div class="feat-card__tag">ATF Readiness</div>
+        <div class="feat-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="feat-card__h">Inspection Readiness Score</div>
+        <div class="feat-card__p">Six weighted compliance checks run continuously against your records. Get a real-time score (A–F grade) so you know exactly where you stand before an ATF inspector walks through the door. No surprises.</div>
+      </div>
+    </div>
+
+    <!-- Compliance callout -->
+    <div class="compliance">
+      <div class="compliance__grid">
+        <div>
+          <div class="sec__eyebrow">Compliance Depth</div>
+          <h3 style="font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:.04em;color:var(--ice);line-height:1">Every Federal Requirement<br>Covered.</h3>
+          <div class="compliance__checks">
+            <div class="compliance__check">ATF 27 CFR 478.125 — A&D record-keeping with disposition tracing</div>
+            <div class="compliance__check">ATF Form 4473 — complete Sections A, B, C, and D digitally</div>
+            <div class="compliance__check">3310.4 (handgun) and 3310.12 (rifle) multi-sale auto-reporting</div>
+            <div class="compliance__check">SHA-256 hash-chained audit log — tamper-evident by design</div>
+            <div class="compliance__check">AES-256 encryption at rest · TLS 1.3 in transit</div>
+          </div>
+        </div>
+        <div class="compliance__score">
+          <div class="compliance__score-ring">
+            <div class="compliance__score-inner">
+              <div class="compliance__score-num">97</div>
+              <div class="compliance__score-sub">/ 100</div>
+            </div>
+          </div>
+          <div class="compliance__score-label" style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--copper);letter-spacing:.06em">Grade: A</div>
+          <div class="compliance__score-label" style="margin-top:8px">Sample Readiness Score</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ── -->
+<section class="sec sec--alt" id="pricing">
+  <div class="container">
+    <div class="sec__eyebrow">Pricing</div>
+    <h2 class="sec__h2">Simple Pricing.<br>No Gotchas.</h2>
+    <p class="sec__p">Start free, upgrade when you're ready. Every plan includes your A&D bound book and Form 4473. No setup fees, no contracts.</p>
+
+    <div class="price__grid">
+      <!-- Free -->
+      <div class="price-card">
+        <div class="price-card__name">Free</div>
+        <div class="price-card__price">$0</div>
+        <div class="price-card__period">forever · no card required</div>
+        <div class="price-card__divider"></div>
+        <div class="price-card__features">
+          <div class="price-card__feat">A&D Bound Book (up to 500 records)</div>
+          <div class="price-card__feat">Digital Form 4473</div>
+          <div class="price-card__feat">NICS log</div>
+          <div class="price-card__feat">CSV export</div>
+          <div class="price-card__feat">1 user · 1 location</div>
+          <div class="price-card__feat--no">POS & barcode scanning</div>
+          <div class="price-card__feat--no">AI pre-submit validation</div>
+          <div class="price-card__feat--no">Readiness score</div>
+        </div>
+        <button class="btn btn--steel btn--full" data-modal="signup">Get Started Free</button>
+      </div>
+
+      <!-- Starter -->
+      <div class="price-card price-card--featured">
+        <div class="price-card__name">Starter</div>
+        <div class="price-card__price">$49</div>
+        <div class="price-card__period">per month · cancel anytime</div>
+        <div class="price-card__divider"></div>
+        <div class="price-card__features">
+          <div class="price-card__feat">Unlimited A&D records</div>
+          <div class="price-card__feat">Full Form 4473 + e-sig</div>
+          <div class="price-card__feat">POS with barcode scan</div>
+          <div class="price-card__feat">Multi-sale auto-alerts</div>
+          <div class="price-card__feat">Gun Show Mode</div>
+          <div class="price-card__feat">3 users · 1 location</div>
+          <div class="price-card__feat--no">AI validation</div>
+          <div class="price-card__feat--no">Multi-location</div>
+        </div>
+        <button class="btn btn--copper btn--full" data-modal="signup">Start 14-Day Trial</button>
+        <div class="price-card__desc">14-day Pro trial included. No card needed to start.</div>
+      </div>
+
+      <!-- Pro -->
+      <div class="price-card">
+        <div class="price-card__name">Pro</div>
+        <div class="price-card__price">$99</div>
+        <div class="price-card__period">per month · cancel anytime</div>
+        <div class="price-card__divider"></div>
+        <div class="price-card__features">
+          <div class="price-card__feat">Everything in Starter</div>
+          <div class="price-card__feat">AI 4473 pre-submit check</div>
+          <div class="price-card__feat">Readiness Score dashboard</div>
+          <div class="price-card__feat">Multi-location support</div>
+          <div class="price-card__feat">CSV migration tools</div>
+          <div class="price-card__feat">Unlimited users</div>
+          <div class="price-card__feat">Priority support</div>
+          <div class="price-card__feat">API access</div>
+        </div>
+        <button class="btn btn--steel btn--full" data-modal="signup">Start 14-Day Trial</button>
+        <div class="price-card__desc">Annual plan available at 15% off.</div>
+      </div>
+    </div>
+
+    <p style="text-align:center;margin-top:24px;font-size:13px;color:var(--fog)">
+      Enterprise / multi-location chains? <a href="mailto:hello@boundstack.org" style="color:var(--copper)">Contact us →</a>
+    </p>
+  </div>
+</section>
+
+<!-- ── COMPARISON ── -->
+<section class="compare" id="compare">
+  <div class="container">
+    <div class="sec__eyebrow">vs. The Competition</div>
+    <h2 class="sec__h2">Why Dealers Switch.</h2>
     <div class="table-scroll">
-      <table class="cmp">
+      <table>
         <thead>
           <tr>
             <th>Feature</th>
-            <th class="cmp--hl">BoundStack</th>
+            <th class="th-bs">BoundStack</th>
             <th>FastBound</th>
-            <th>FFLSafe</th>
-            <th>Bravo</th>
-            <th>Orchid</th>
+            <th>Bravo POS</th>
+            <th>Paper / Manual</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>Cloud A&D Book</td>   <td class="cmp--hl t-yes">✓ Cloud</td>   <td class="t-yes">✓ Cloud</td>   <td class="t-yes">✓ Cloud</td> <td class="t-yes">✓</td> <td class="t-yes">✓</td></tr>
-          <tr><td>Digital 4473</td>      <td class="cmp--hl t-yes">✓</td>         <td class="t-yes">✓</td>        <td class="t-yes">✓</td>       <td class="t-yes">✓</td> <td class="t-no">✗</td></tr>
-          <tr><td>Point of Sale</td>     <td class="cmp--hl t-yes">✓</td>         <td class="t-no">✗</td>         <td class="t-no">✗</td>        <td class="t-yes">✓</td> <td class="t-no">✗</td></tr>
-          <tr><td>Phone / Tablet</td>    <td class="cmp--hl t-yes">✓ Full</td>    <td class="t-mid">Limited</td>  <td class="t-mid">Limited</td>  <td class="t-mid">Limited</td><td class="t-no">✗</td></tr>
-          <tr><td>Gun Show Offline</td>  <td class="cmp--hl t-yes">✓</td>         <td class="t-no">✗</td>         <td class="t-no">✗</td>        <td class="t-no">✗</td> <td class="t-no">✗</td></tr>
-          <tr><td>GunBroker Sync</td>    <td class="cmp--hl t-yes">✓</td>         <td class="t-no">✗</td>         <td class="t-no">✗</td>        <td class="t-mid">Partial</td><td class="t-mid">Partial</td></tr>
-          <tr><td>AI Compliance</td>     <td class="cmp--hl t-yes">✓</td>         <td class="t-no">✗</td>         <td class="t-no">✗</td>        <td class="t-no">✗</td> <td class="t-no">✗</td></tr>
-          <tr><td>Month-to-Month</td>    <td class="cmp--hl t-yes">✓ Always</td>  <td class="t-yes">✓</td>        <td class="t-yes">Free</td>    <td class="t-no">Annual</td><td class="t-no">Annual</td></tr>
-          <tr><td>Free Plan</td>         <td class="cmp--hl t-yes">✓</td>         <td class="t-mid">Trial</td>    <td class="t-yes">✓</td>       <td class="t-no">✗</td> <td class="t-no">✗</td></tr>
-          <tr><td>Free Migration</td>    <td class="cmp--hl t-yes">✓</td>         <td class="t-no">✗</td>         <td class="t-no">✗</td>        <td class="t-no">✗</td> <td class="t-no">✗</td></tr>
-          <tr><td>Starting price</td>    <td class="cmp--hl t-yes">$0</td>         <td>$8–80</td>                  <td>Free</td>                  <td>$69</td>             <td>$19+</td></tr>
+          <tr><td>A&D Bound Book</td><td class="tck">✓ Digital + offline</td><td class="tck">✓</td><td class="tck">✓</td><td>Paper only</td></tr>
+          <tr><td>Form 4473</td><td class="tck">✓ Full digital + e-sig</td><td class="tck">✓</td><td class="tcx">—</td><td class="tcx">—</td></tr>
+          <tr><td>Multi-sale auto-alerts</td><td class="tck">✓ 3310.4 + 3310.12</td><td class="tcx">Manual</td><td class="tcx">—</td><td class="tcx">—</td></tr>
+          <tr><td>POS / barcode scan</td><td class="tck">✓ Built-in</td><td class="tcx">—</td><td class="tck">✓</td><td class="tcx">—</td></tr>
+          <tr><td>Offline mode</td><td class="tck">✓ Full PWA + sync</td><td class="tcx">—</td><td class="tcx">Partial</td><td class="tck">Always</td></tr>
+          <tr><td>AI 4473 validation</td><td class="tck">✓ Claude AI</td><td class="tcx">—</td><td class="tcx">—</td><td class="tcx">—</td></tr>
+          <tr><td>Readiness score</td><td class="tck">✓ Real-time A–F</td><td class="tcx">—</td><td class="tcx">—</td><td class="tcx">—</td></tr>
+          <tr><td>Data migration</td><td class="tck">✓ FastBound/Orchid/Bravo</td><td class="tcx">—</td><td class="tcx">—</td><td class="tcx">—</td></tr>
+          <tr><td>Starting price</td><td class="tck" style="color:var(--copper)">Free</td><td>$99/mo</td><td>$149/mo</td><td>$0 + risk</td></tr>
+          <tr><td>Pro-2A · never de-platformed</td><td class="tck">✓</td><td class="tcx">—</td><td class="tcx">—</td><td class="tck">N/A</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </section>
 
-<!-- ────────────────────────────────────────────────────
-     PRICING
-     ──────────────────────────────────────────────────── -->
-<section class="sec" id="pricing">
+<!-- ── TRUST ── -->
+<section class="trust">
   <div class="container">
-    <p class="sec__eyebrow">Transparent pricing</p>
-    <h2 class="sec__h2">No hidden fees. No contracts.</h2>
-    <p class="sec__p">Free onboarding and free migration from your current software on every plan.</p>
-    <div class="price-grid">
-
-      <div class="price-card">
-        <div class="price-card__tier">Free Forever</div>
-        <div class="price-card__amount">$0<small>/mo</small></div>
-        <p class="price-card__desc">For home-based FFLs getting started. Replaces paper and FFLSafe.</p>
-        <button class="btn btn--outline btn--full price-card__btn" data-modal="signup">Get Started Free</button>
-        <ul class="price-card__list">
-          <li>Cloud A&D Bound Book</li>
-          <li>Digital Form 4473</li>
-          <li>Up to 200 transactions/yr</li>
-          <li>ATF Inspection Report</li>
-          <li>Mobile access</li>
-          <li>Email support</li>
-        </ul>
+    <div class="trust__label">Trusted Infrastructure</div>
+    <div class="trust__grid">
+      <div class="trust__item">
+        <div class="trust__item-icon">🏛️</div>
+        <div class="trust__item-name">NSSF Member</div>
+        <div class="trust__item-desc">National Shooting Sports Foundation industry member</div>
       </div>
-
-      <div class="price-card">
-        <div class="price-card__tier">Starter</div>
-        <div class="price-card__amount"><sup>$</sup>49<small>/mo</small></div>
-        <p class="price-card__desc">For active retail dealers ready to go beyond basic compliance.</p>
-        <button class="btn btn--outline btn--full price-card__btn" data-modal="signup">Start 14-Day Trial</button>
-        <ul class="price-card__list">
-          <li>Everything in Free</li>
-          <li>Unlimited transactions</li>
-          <li>Full inventory management</li>
-          <li>Customer database</li>
-          <li>GunBroker sync</li>
-          <li>Priority email support</li>
-        </ul>
+      <div class="trust__item">
+        <div class="trust__item-icon">💳</div>
+        <div class="trust__item-name">FFL-Friendly Payments</div>
+        <div class="trust__item-desc">Firearm-tolerant payment processors — never de-platformed</div>
       </div>
-
-      <div class="price-card price-card--pop">
-        <div class="price-card__pop">Most Popular</div>
-        <div class="price-card__tier">Pro</div>
-        <div class="price-card__amount"><sup>$</sup>99<small>/mo</small></div>
-        <p class="price-card__desc">Complete shop management. Replaces $265–605/mo in separate tools.</p>
-        <button class="btn btn--red btn--full price-card__btn" data-modal="signup">Start 14-Day Trial</button>
-        <ul class="price-card__list">
-          <li>Everything in Starter</li>
-          <li>Full Point of Sale</li>
-          <li>Gun-friendly payments</li>
-          <li>AI Compliance Checker</li>
-          <li>Customer SMS &amp; email</li>
-          <li>Gunsmithing module</li>
-          <li>Distributor catalog sync</li>
-          <li>Gun Show offline mode</li>
-          <li>Phone support</li>
-        </ul>
-        <p class="price-card__foot">Avg. dealer saves $166/mo vs current stack</p>
+      <div class="trust__item">
+        <div class="trust__item-icon">🛡️</div>
+        <div class="trust__item-name">Cyber Liability Insured</div>
+        <div class="trust__item-desc">AES-256 at rest · TLS 1.3 in transit · 72-hr breach notification</div>
       </div>
-
-      <div class="price-card">
-        <div class="price-card__tier">Enterprise</div>
-        <div class="price-card__amount" style="font-size:28px;letter-spacing:-.5px">Custom</div>
-        <p class="price-card__desc">Multi-location, ranges, and pawn shops with complex needs.</p>
-        <button class="btn btn--navy btn--full price-card__btn" data-modal="demo">Book a Demo</button>
-        <ul class="price-card__list">
-          <li>Everything in Pro</li>
-          <li>Multi-location dashboard</li>
-          <li>Range management</li>
-          <li>Staff roles &amp; permissions</li>
-          <li>API access</li>
-          <li>Dedicated account manager</li>
-          <li>SOC 2 compliance docs</li>
-          <li>Custom integrations</li>
-        </ul>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- ────────────────────────────────────────────────────
-     PLEDGE
-     ──────────────────────────────────────────────────── -->
-<section class="sec sec--dark" id="pledge">
-  <div class="container sec--center">
-    <p class="sec__eyebrow sec__eyebrow--light">Our Commitment</p>
-    <h2 class="sec__h2" style="color:#fff">We'll never de-platform you.</h2>
-    <p class="sec__p sec__p--light" style="margin-left:auto;margin-right:auto">Stripe banned you. Shopify banned you. Salesforce banned you. We were built for this industry — and we're not going anywhere.</p>
-    <div class="pledge-grid">
-      <div class="pledge-card">
-        <span class="pledge-card__emoji emoji">🇺🇸</span>
-        <h3>Pro-2A, Period</h3>
-        <p>We believe in the Second Amendment. Our team are gun owners. We built this because mainstream tech abandoned the firearms industry.</p>
-      </div>
-      <div class="pledge-card">
-        <span class="pledge-card__emoji emoji">🚫</span>
-        <h3>No Deplatforming</h3>
-        <p>In our terms of service: we will never cancel your account for selling legal firearms. Built on infrastructure that can't be pressured.</p>
-      </div>
-      <div class="pledge-card">
-        <span class="pledge-card__emoji emoji">🔓</span>
-        <h3>Your Data Is Yours</h3>
-        <p>Export A&D book, 4473s, customers, inventory — anytime, in standard formats. No lock-in. No $750 "export fee."</p>
-      </div>
-      <div class="pledge-card">
-        <span class="pledge-card__emoji emoji">📞</span>
-        <h3>Real Human Support</h3>
-        <p>US-based. Responds within 4 hours. Our team are actual gun people who understand your workflow.</p>
+      <div class="trust__item">
+        <div class="trust__item-icon">🤖</div>
+        <div class="trust__item-name">AI-Native Compliance</div>
+        <div class="trust__item-desc">Claude AI validates every Form 4473 before submission</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ────────────────────────────────────────────────────
-     FAQ
-     ──────────────────────────────────────────────────── -->
-<section class="sec sec--center" id="faq">
+<!-- ── DISTRIBUTORS ── -->
+<section class="dist">
   <div class="container">
-    <p class="sec__eyebrow">FAQ</p>
-    <h2 class="sec__h2">Common questions.</h2>
-    <p class="sec__p" style="margin-left:auto;margin-right:auto">Straight answers. No sales speak.</p>
-    <div class="faq" style="text-align:left">
-
-      <div class="faq__item">
-        <button class="faq__q">
-          Is the A&D bound book actually ATF-compliant?
-          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="faq__a"><div class="faq__a-inner">Our A&D book captures all fields required under 27 CFR 478.125 — acquisition date, manufacturer, importer, model, serial number, caliber, type, and disposition information — and generates a printable report. <strong>BoundStack is an early-stage tool and has not yet been independently certified by an ATF compliance attorney.</strong> We recommend using it alongside your existing records and consulting a licensed compliance expert for your specific situation.</div></div>
-      </div>
-
-      <div class="faq__item">
-        <button class="faq__q">
-          How do I accept payments without Stripe or Square?
-          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="faq__a"><div class="faq__a-inner">We integrate with TacticalPay and Payroc — firearms-friendly processors with competitive rates. Cash, check, and split payments also supported. Your BoundStack subscription is billed through a standard business account — we're selling software, not firearms.</div></div>
-      </div>
-
-      <div class="faq__item">
-        <button class="faq__q">
-          Can I migrate from FastBound, FFLSafe, or paper?
-          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="faq__a"><div class="faq__a-inner">Yes, and it's free. We have importers for FastBound and FFLSafe exports, plus CSV templates for paper records. For large shops we do white-glove migration — our team handles everything and validates every record. Typically 24–48 hours.</div></div>
-      </div>
-
-      <div class="faq__item">
-        <button class="faq__q">
-          What if servers go down during an ATF inspection?
-          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="faq__a"><div class="faq__a-inner">We keep a local cache on your device so the bound book stays accessible even offline. Daily PDF backups are automatically emailed. We target 99.9% uptime and have had zero compliance-related outages.</div></div>
-      </div>
-
-      <div class="faq__item">
-        <button class="faq__q">
-          Is my customers' data secure?
-          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="faq__a"><div class="faq__a-inner">Encrypted at rest (AES-256) and in transit (TLS 1.3). Zero-trust architecture, mandatory MFA, annual penetration testing. Cyber liability insurance and 72-hour breach notification. We never sell or share your data.</div></div>
-      </div>
-
-      <div class="faq__item">
-        <button class="faq__q">
-          Do I have to sign a long-term contract?
-          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="faq__a"><div class="faq__a-inner">Never. Every plan is month-to-month. Cancel with one click, all data exported free within 24 hours. Annual plans at 15% off if you want — zero pressure.</div></div>
-      </div>
-
+    <div class="dist__label">Compatible with your distributors</div>
+    <div class="dist__row">
+      <span class="dist__tag">RSR Group</span>
+      <span class="dist__tag">Lipsey's</span>
+      <span class="dist__tag">Davidson's</span>
+      <span class="dist__tag">GunBroker</span>
+      <span class="dist__tag">Sports South</span>
+      <span class="dist__tag">Zanders</span>
     </div>
   </div>
 </section>
 
-<!-- ────────────────────────────────────────────────────
-     FINAL CTA
-     ──────────────────────────────────────────────────── -->
+<!-- ── SECURITY / PLEDGE ── -->
+<section class="pledge" id="security">
+  <div class="container">
+    <div class="sec__eyebrow">Security Pledge</div>
+    <h2 class="sec__h2">Your Data.<br>Your Records.<br>Your Rights.</h2>
+
+    <div class="pledge__grid">
+      <div class="pledge__items">
+        <div class="pledge__item">
+          <div class="pledge__item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <div class="pledge__item-h">AES-256 Encryption</div>
+            <div class="pledge__item-p">All records encrypted at rest. TLS 1.3 in transit. Zero plaintext storage of sensitive data.</div>
+          </div>
+        </div>
+        <div class="pledge__item">
+          <div class="pledge__item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div>
+            <div class="pledge__item-h">Tamper-Evident Audit Log</div>
+            <div class="pledge__item-p">SHA-256 hash-chained record trail. Every entry cryptographically linked — any tampering is instantly detectable.</div>
+          </div>
+        </div>
+        <div class="pledge__item">
+          <div class="pledge__item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div>
+            <div class="pledge__item-h">99.9% Uptime SLA</div>
+            <div class="pledge__item-p">Full offline PWA mode with background sync. ATF inspection day works even with zero internet.</div>
+          </div>
+        </div>
+        <div class="pledge__item">
+          <div class="pledge__item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div>
+            <div class="pledge__item-h">Data Belongs to You</div>
+            <div class="pledge__item-p">Export everything in ATF-compliant CSV format with one click. We never sell, share, or monetize your data.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pledge__right">
+        <div class="pledge__founder-h">A Note From the Builder</div>
+        <div class="pledge__founder-p">Hey — I'm <strong style="color:var(--ice)">Arsen</strong>, 22 years old. I built BoundStack because independent FFL dealers deserve software that fits their reality — not the reality of big distributors.</div>
+        <div class="pledge__founder-p">Too many small shops are still running on paper or paying $300/mo for bloated tools they barely use. BoundStack exists to change that. Every feature was requested by a real dealer solving a real problem.</div>
+        <div class="pledge__founder-p" style="margin-bottom:20px">I'm Pro-2A. This software will never be used against you. Your compliance records will never be weaponized. And BoundStack will never voluntarily de-platform a legal FFL holder. That's a promise, not a policy.</div>
+        <div class="pledge__founder-sig">— Arsen · Founder, BoundStack</div>
+        <div style="margin-top:20px;font-size:12px;color:var(--fog)">Questions? <a href="mailto:hello@boundstack.org" style="color:var(--copper)">hello@boundstack.org</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<section class="sec sec--dark" id="faq">
+  <div class="container" style="max-width:760px">
+    <div class="sec__eyebrow">FAQ</div>
+    <h2 class="sec__h2">Common Questions.</h2>
+
+    <div class="faq__list">
+      <div class="faq__item">
+        <button class="faq__q">Is BoundStack ATF compliant?
+          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">Yes. BoundStack meets all requirements under 27 CFR 478.125 for A&D record-keeping. Form 4473 entries include all mandatory fields per ATF specifications. We strongly recommend verifying compliance with your compliance attorney as regulations can change.</div></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q">Can I migrate from FastBound, Orchid, or Bravo?
+          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">Yes. The Migrate Data tool supports CSV imports from FastBound, Orchid/eBound, Bravo, and any generic format. You get a dry-run preview before committing. Most migrations complete in under 10 minutes.</div></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q">What happens if I lose internet during a sale?
+          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">BoundStack is a full Progressive Web App. Read access (A&D records, customer lookups, recent 4473s) works entirely offline from IndexedDB. Write operations queue locally and sync automatically when connectivity is restored — with deduplication built in.</div></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q">What about de-platforming risk?
+          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">BoundStack is built and operated by a Pro-2A founder who will never voluntarily de-platform a legal FFL holder. We use firearms-friendly infrastructure and payment processors that understand the industry. Your data is always exportable — we will never hold it hostage.</div></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q">What if servers go down during an ATF inspection?
+          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">We target 99.9% uptime. You can export a full CSV backup at any time from the app — and we recommend keeping regular exports. The app also caches your most recent data offline, so inspection day is covered even without connectivity.</div></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q">Is my customers' data secure?
+          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">Encrypted at rest (AES-256) and in transit (TLS 1.3). Tamper-evident SHA-256 hash-chained audit log. Cyber liability insurance and 72-hour breach notification policy. We never sell or share your data.</div></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q">Do I have to sign a long-term contract?
+          <svg class="faq__arrow" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq__a"><div class="faq__a-inner">Never. Every plan is month-to-month. Cancel with one click, all data exported free within 24 hours. Annual plans available at 15% off if you want — zero pressure.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FINAL CTA ── -->
 <section class="cta-final">
-  <h2>Ready to actually trust your software?</h2>
-  <p>Join dealers who replaced 5 tools with one. Free to start — upgrade when you're ready.</p>
-  <div class="cta-final__btns">
-    <button class="btn btn--white btn--lg" data-modal="signup">Start Free — No Card Needed</button>
-    <button class="btn btn--ghost btn--lg" data-modal="demo">Book a 15-min Demo</button>
-  </div>
-  <p class="cta-final__fine">Free forever plan · 14-day Pro trial · Cancel anytime</p>
-</section>
-
-<!-- ────────────────────────────────────────────────────
-     ABOUT
-     ──────────────────────────────────────────────────── -->
-<section class="sec" id="about" style="background:#0f172a;color:#e2e8f0;">
-  <div class="container" style="max-width:720px">
-    <p class="sec__eyebrow" style="color:#94a3b8;">Who built this</p>
-    <h2 class="sec__h2" style="color:#f1f5f9;">Built to make life easier for every FFL dealer.</h2>
-    <div style="display:flex;gap:24px;align-items:flex-start;margin-top:32px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:280px;">
-        <p style="color:#cbd5e1;line-height:1.75;margin-bottom:16px;">
-          Hey — I'm <strong style="color:#f1f5f9;">Arsen</strong>, 22 years old. I built BoundStack with one goal: give independent FFL dealers a tool that actually fits their day-to-day — simple, reliable, and affordable.
-        </p>
-        <p style="color:#cbd5e1;line-height:1.75;margin-bottom:16px;">
-          Too many small shops are still running on paper or paying for bloated software built for big distributors. That's the problem I'm here to solve. Every feature in BoundStack exists because a real dealer needed it.
-        </p>
-        <p style="color:#94a3b8;font-size:14px;">
-          Questions or feedback? <a href="mailto:hello@boundstack.org" style="color:#facc15;">hello@boundstack.org</a>
-        </p>
-      </div>
+  <div class="grid-bg"></div>
+  <div class="cta-final__inner">
+    <h2>Ready to Actually<br>Trust Your Software?</h2>
+    <p>Join dealers who replaced 5 tools with one. Free to start — upgrade when you're ready.</p>
+    <div class="cta-final__btns">
+      <button class="btn btn--copper btn--lg" data-modal="signup">Start Free — No Card Needed</button>
+      <button class="btn btn--ghost btn--lg" data-modal="demo">Book a 15-min Demo</button>
     </div>
+    <p class="cta-final__fine">Free forever plan · 14-day Pro trial · Cancel anytime</p>
   </div>
 </section>
 
-<!-- ────────────────────────────────────────────────────
-     FOOTER
-     ──────────────────────────────────────────────────── -->
+<!-- ── FOOTER ── -->
 <footer class="footer">
   <div class="footer__grid">
     <div class="footer__brand">
-      <a href="#top" class="nav__logo" style="font-size:18px">
-        <div class="nav__logo-mark" style="width:30px;height:30px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <a href="#top" style="display:flex;align-items:center;gap:10px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.08em;color:var(--ice)">
+        <div style="width:30px;height:30px;background:linear-gradient(135deg,var(--copper),#8B3A0A);border-radius:6px;display:grid;place-items:center;box-shadow:0 0 10px rgba(200,100,26,.4)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
         BoundStack
       </a>
       <p>Cloud-native FFL management software. Built by gun people, for gun people.</p>
-      <div class="footer__tag"><span class="emoji">🇺🇸</span> Pro-2A · Never De-Platformed</div>
+      <div class="footer__tag">🇺🇸 Pro-2A · Never De-Platformed</div>
     </div>
     <div class="footer__col">
       <h4>Product</h4>
@@ -1139,8 +1247,8 @@
     <div class="footer__col">
       <h4>Company</h4>
       <ul>
-        <li><a href="#about">About</a></li>
-        <li><a href="#pledge">Security</a></li>
+        <li><a href="#security">About</a></li>
+        <li><a href="#security">Security</a></li>
         <li><a href="/privacy">Privacy Policy</a></li>
         <li><a href="/terms">Terms of Service</a></li>
       </ul>
@@ -1151,14 +1259,12 @@
     <div class="footer__bottom-links">
       <a href="/privacy">Privacy</a>
       <a href="/terms">Terms</a>
-      <a href="#pledge">Security</a>
+      <a href="#security">Security</a>
     </div>
   </div>
 </footer>
 
-<!-- ────────────────────────────────────────────────────
-     MODALS
-     ──────────────────────────────────────────────────── -->
+<!-- ── MODALS ── -->
 
 <!-- Signup -->
 <div class="overlay" id="modal-signup">
@@ -1167,7 +1273,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
     <div class="modal__content" id="signup-form">
-      <h2><span class="emoji">🎉</span> Start for free</h2>
+      <h2>Start for Free</h2>
       <p class="modal__sub">No credit card. Get your cloud A&D bound book live in 5 minutes.</p>
       <form class="modal__form" id="signupFormEl">
         <input class="modal__input" type="text" placeholder="Your name" required autocomplete="name" />
@@ -1183,9 +1289,14 @@
           <option value="paper">Paper / nothing</option>
           <option value="other">Other</option>
         </select>
-        <button type="submit" class="btn btn--red btn--full" style="padding:14px;font-size:16px">Create Free Account →</button>
+        <select class="modal__input">
+          <option value="free" selected>Free plan — get started at no cost</option>
+          <option value="starter">Starter — $49/mo (interested)</option>
+          <option value="pro">Pro — $99/mo (interested)</option>
+        </select>
+        <button type="submit" class="btn btn--copper btn--full" style="padding:14px;font-size:14px">Create Free Account →</button>
       </form>
-      <p class="modal__fine">By signing up you agree to our Terms and Privacy Policy.</p>
+      <p class="modal__fine">By signing up you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
     </div>
   </div>
 </div>
@@ -1196,15 +1307,15 @@
     <button class="modal__close" aria-label="Close">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
-    <h2><span class="emoji">👋</span> Welcome back</h2>
+    <h2>Welcome Back</h2>
     <p class="modal__sub">Sign in to your BoundStack account.</p>
     <form class="modal__form" id="signinFormEl">
       <input class="modal__input" type="email" placeholder="Email address" required autocomplete="email" />
       <input class="modal__input" type="password" placeholder="Password" required autocomplete="current-password" />
-      <button type="submit" class="btn btn--red btn--full" style="padding:14px;font-size:16px">Sign In →</button>
+      <button type="submit" class="btn btn--copper btn--full" style="padding:14px;font-size:14px">Sign In →</button>
     </form>
     <p class="modal__fine" style="margin-top:12px">Don't have an account? <a href="#" id="switch-to-signup">Start free →</a></p>
-    <p class="modal__fine" style="margin-top:6px"><a href="/reset-password" style="color:#94a3b8">Forgot your password?</a></p>
+    <p class="modal__fine" style="margin-top:6px"><a href="/reset-password">Forgot your password?</a></p>
   </div>
 </div>
 
@@ -1215,7 +1326,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
     <div class="modal__content" id="demo-form">
-      <h2><span class="emoji">📅</span> Book a demo</h2>
+      <h2>Book a Demo</h2>
       <p class="modal__sub">15 minutes. We'll walk through everything and answer your questions.</p>
       <form class="modal__form" id="demoFormEl">
         <input class="modal__input" type="text" placeholder="Your name" required autocomplete="name" />
@@ -1227,37 +1338,31 @@
           <option value="2-5">2–5 locations</option>
           <option value="6+">6+ locations</option>
         </select>
-        <button type="submit" class="btn btn--red btn--full" style="padding:14px;font-size:16px">Request Demo →</button>
+        <button type="submit" class="btn btn--copper btn--full" style="padding:14px;font-size:14px">Request Demo →</button>
       </form>
       <p class="modal__fine">We'll reach out within 1 business day.</p>
     </div>
     <div class="modal__success" id="demo-success">
-      <span class="modal__success-emoji emoji">✅</span>
-      <h3>Request received!</h3>
+      <span class="modal__success-emoji">✅</span>
+      <h3>Request Received!</h3>
       <p>We'll reach out within 1 business day to schedule your demo.</p>
     </div>
   </div>
 </div>
 
-<!-- ────────────────────────────────────────────────────
-     JAVASCRIPT — connected to /api/*
-     ──────────────────────────────────────────────────── -->
+<!-- ── JAVASCRIPT ── -->
 <script>
 (function() {
   'use strict';
 
-  var API = ''; // same origin — server serves this file
+  var API = '';
 
-  /* ── Helpers ── */
   var $ = function(sel, ctx) { return (ctx || document).querySelector(sel); };
   var $$ = function(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); };
 
   async function api(method, endpoint, body) {
-    var opts = {
-      method: method,
-      headers: { 'Content-Type': 'application/json' },
-    };
-    var token = localStorage.getItem('gv_token');
+    var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
+    var token = localStorage.getItem('bs_token');
     if (token) opts.headers['Authorization'] = 'Bearer ' + token;
     if (body)  opts.body = JSON.stringify(body);
     var res = await fetch(API + endpoint, opts);
@@ -1312,7 +1417,6 @@
     if (!overlay) return;
     overlay.classList.add('open');
     document.body.classList.add('no-scroll');
-    /* Focus first input */
     var firstInput = $('input', overlay);
     if (firstInput) setTimeout(function() { firstInput.focus(); }, 200);
   }
@@ -1323,7 +1427,6 @@
     document.body.classList.remove('no-scroll');
   }
 
-  /* data-modal buttons */
   $$('[data-modal]').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
       e.preventDefault();
@@ -1331,24 +1434,20 @@
     });
   });
 
-  /* Close buttons */
   $$('.modal__close').forEach(function(btn) {
     btn.addEventListener('click', function() { closeModal(); });
   });
 
-  /* Overlay click to close */
   $$('.overlay').forEach(function(ov) {
     ov.addEventListener('click', function(e) {
       if (e.target === ov) closeModal();
     });
   });
 
-  /* Escape key */
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeModal();
   });
 
-  /* Switch signin -> signup */
   var switchLink = $('#switch-to-signup');
   if (switchLink) {
     switchLink.addEventListener('click', function(e) {
@@ -1358,7 +1457,35 @@
     });
   }
 
-  /* ── Form submissions ── */
+  /* ── Hero inline signup form ── */
+  var heroForm = $('#signupFormHero');
+  if (heroForm) {
+    heroForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var btn = heroForm.querySelector('button[type=submit]');
+      setBtn(btn, true, 'Create Free Account →');
+      try {
+        var inputs = heroForm.querySelectorAll('input, select');
+        var data = await api('POST', '/api/signup', {
+          name:             inputs[0].value,
+          email:            inputs[1].value,
+          password:         inputs[2].value,
+          ffl_number:       inputs[3].value || null,
+          current_software: inputs[4].value || null,
+          plan:             inputs[5].value || 'free',
+          ref:              (new URLSearchParams(location.search).get('ref') || localStorage.getItem('bs_ref') || ''),
+        });
+        localStorage.setItem('bs_token', data.token);
+        localStorage.setItem('gv_user',  JSON.stringify(data.user));
+        window.location.href = '/app';
+      } catch(err) {
+        showError(heroForm, err.message);
+        setBtn(btn, false, 'Create Free Account →');
+      }
+    });
+  }
+
+  /* ── Modal signup form ── */
   var signupForm = $('#signupFormEl');
   if (signupForm) {
     signupForm.addEventListener('submit', async function(e) {
@@ -1373,8 +1500,10 @@
           password:         inputs[2].value,
           ffl_number:       inputs[3].value || null,
           current_software: inputs[4].value || null,
+          plan:             inputs[5].value || 'free',
+          ref:              (new URLSearchParams(location.search).get('ref') || localStorage.getItem('bs_ref') || ''),
         });
-        localStorage.setItem('gv_token', data.token);
+        localStorage.setItem('bs_token', data.token);
         localStorage.setItem('gv_user',  JSON.stringify(data.user));
         window.location.href = '/app';
       } catch(err) {
@@ -1396,7 +1525,7 @@
           email:    inputs[0].value,
           password: inputs[1].value,
         });
-        localStorage.setItem('gv_token', data.token);
+        localStorage.setItem('bs_token', data.token);
         localStorage.setItem('gv_user',  JSON.stringify(data.user));
         window.location.href = '/app';
       } catch(err) {
@@ -1429,7 +1558,6 @@
     });
   }
 
-  /* ── Update nav if user already logged in ── */
   function updateNavForLoggedInUser(user) {
     var signInBtn = $('button[data-modal="signin"]');
     if (signInBtn && user) {
@@ -1439,16 +1567,12 @@
   }
 
   var savedUser = localStorage.getItem('gv_user');
-  if (savedUser) {
-    try { updateNavForLoggedInUser(JSON.parse(savedUser)); } catch {}
-  }
+  if (savedUser) { try { updateNavForLoggedInUser(JSON.parse(savedUser)); } catch {} }
 
-  /* Reset forms when modal closes */
   $$('.overlay').forEach(function(ov) {
     var observer = new MutationObserver(function(mutations) {
       mutations.forEach(function(m) {
         if (m.attributeName === 'class' && !ov.classList.contains('open')) {
-          /* Reset after close animation */
           setTimeout(function() {
             $$('form', ov).forEach(function(f) { f.reset(); });
             $$('.modal__content', ov).forEach(function(c) { c.style.display = ''; });
@@ -1460,7 +1584,7 @@
     observer.observe(ov, { attributes: true });
   });
 
-  /* ── FAQ accordion ── */
+  /* ── FAQ ── */
   $$('.faq__q').forEach(function(btn) {
     btn.addEventListener('click', function() {
       var item = btn.parentElement;
@@ -1472,9 +1596,7 @@
 
   /* ── Nav scroll highlight ── */
   var navAnchors = $$('.nav__links a');
-  var sectionIds = navAnchors.map(function(a) {
-    return a.getAttribute('href').replace('#', '');
-  });
+  var sectionIds = navAnchors.map(function(a) { return a.getAttribute('href').replace('#', ''); });
 
   function onScroll() {
     var scrollY = window.pageYOffset || document.documentElement.scrollTop;
@@ -1484,64 +1606,111 @@
       if (el && scrollY >= el.offsetTop - 140) current = id;
     });
     navAnchors.forEach(function(a) {
-      var isActive = a.getAttribute('href') === '#' + current;
-      a.classList.toggle('active', isActive);
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
     });
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-})();
-
-/* ── DARK / LIGHT THEME ─────────────────────────────── */
-(function(){
-  var saved = localStorage.getItem('bs-theme') || 'light';
-  function applyTheme(t){
-    document.documentElement.setAttribute('data-theme', t);
-    localStorage.setItem('bs-theme', t);
-    var btn = document.getElementById('themeToggle');
-    if(btn) btn.textContent = t === 'dark' ? '☀️ Light' : '🌙 Dark';
-  }
-  applyTheme(saved);
-  document.addEventListener('DOMContentLoaded', function(){
-    applyTheme(saved);
-    var btn = document.getElementById('themeToggle');
-    if(btn) btn.addEventListener('click', function(){
-      applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  /* ── Animated stat counters ── */
+  function animateCounters() {
+    document.querySelectorAll('[data-count]').forEach(function(el) {
+      var target = parseFloat(el.getAttribute('data-count'));
+      var isDecimal = target % 1 !== 0;
+      var start = 0; var dur = 1800; var startTime = null;
+      function step(ts) {
+        if (!startTime) startTime = ts;
+        var prog = Math.min((ts - startTime) / dur, 1);
+        var ease = 1 - Math.pow(1 - prog, 3);
+        var val = start + (target - start) * ease;
+        el.textContent = isDecimal ? val.toFixed(1) : Math.floor(val).toLocaleString();
+        if (prog < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
     });
-  });
+  }
+
+  var statsObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) { animateCounters(); statsObserver.disconnect(); }
+    });
+  }, { threshold: 0.3 });
+  var statsEl = document.querySelector('.stats');
+  if (statsEl) statsObserver.observe(statsEl);
+
 })();
 
-/* ── SCROLL REVEAL ANIMATIONS ───────────────────────── */
+/* ── SCROLL REVEAL ── */
 (function(){
+  var SELECTORS = [
+    '.feat-card', '.pain-card', '.price-card', '.faq__item',
+    '.trust__item', '.stat', '.pledge__item',
+    '.sec__h2', '.sec__eyebrow', '.sec__p', '.compliance', '.table-scroll'
+  ];
+
+  function revealAll() {
+    document.querySelectorAll('.reveal:not(.visible)').forEach(function(el){
+      el.classList.add('visible');
+    });
+  }
+
+  // Failsafe: make everything visible after 1.5s regardless
+  setTimeout(revealAll, 1500);
+
   var observer = new IntersectionObserver(function(entries){
     entries.forEach(function(e){
       if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target); }
     });
-  }, { threshold: 0.1 });
+  }, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
 
-  document.addEventListener('DOMContentLoaded', function(){
-    /* Auto-attach reveal to key elements with staggered delays */
-    var groups = ['.feat-card', '.pain-card', '.price-card', '.faq__item', '.trust__item'];
-    groups.forEach(function(sel){
+  function setup() {
+    var staggerSelectors = ['.feat-card', '.pain-card', '.price-card', '.faq__item', '.trust__item', '.stat', '.pledge__item'];
+    staggerSelectors.forEach(function(sel){
       document.querySelectorAll(sel).forEach(function(el, i){
         el.classList.add('reveal');
         if(i%4===1) el.classList.add('reveal-d1');
         if(i%4===2) el.classList.add('reveal-d2');
         if(i%4===3) el.classList.add('reveal-d3');
-        observer.observe(el);
+        // Already in or above viewport? Make visible immediately
+        var rect = el.getBoundingClientRect();
+        if(rect.top < window.innerHeight) { el.classList.add('visible'); }
+        else { observer.observe(el); }
       });
     });
-    /* Headings & section intros */
-    document.querySelectorAll('.sec__h2, .sec__eyebrow, .sec__p').forEach(function(el){
-      el.classList.add('reveal'); observer.observe(el);
+    document.querySelectorAll('.sec__h2, .sec__eyebrow, .sec__p, .compliance, .table-scroll').forEach(function(el){
+      el.classList.add('reveal');
+      var rect = el.getBoundingClientRect();
+      if(rect.top < window.innerHeight) { el.classList.add('visible'); }
+      else { observer.observe(el); }
     });
-    /* Table, about section */
-    document.querySelectorAll('.table-scroll, .cta-final h2').forEach(function(el){
-      el.classList.add('reveal'); observer.observe(el);
-    });
-  });
+  }
+
+  if(document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setup);
+  } else {
+    setup();
+  }
 })();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').catch(function() {});
+  });
+}
+try {
+  var _ref = new URLSearchParams(location.search).get('ref');
+  if (_ref) {
+    localStorage.setItem('bs_ref', _ref.toUpperCase().trim());
+    localStorage.setItem('bs_ref_at', Date.now().toString());
+  } else {
+    var at = parseInt(localStorage.getItem('bs_ref_at') || '0', 10);
+    if (at && Date.now() - at > 30 * 86400000) {
+      localStorage.removeItem('bs_ref'); localStorage.removeItem('bs_ref_at');
+    }
+  }
+} catch(e) {}
 </script>
 </body>
 </html>
