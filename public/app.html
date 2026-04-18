@@ -78,7 +78,17 @@
       width: 2px; background: var(--copper); border-radius: 2px;
     }
     .badge-soon { margin-left: auto; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(251,191,36,.1); color: #fbbf24; letter-spacing: .04em; }
-    .sidebar-footer { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border); }
+    /* Nav scroll area — lets Sign Out button always stay visible */
+    .nav-scroll {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      margin: 0 -12px; padding: 0 12px;
+      min-height: 0; /* critical: allows flex child to shrink */
+    }
+    .nav-scroll::-webkit-scrollbar { width: 3px; }
+    .nav-scroll::-webkit-scrollbar-track { background: transparent; }
+    .nav-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .nav-scroll::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+    .sidebar-footer { flex-shrink: 0; padding-top: 14px; border-top: 1px solid var(--border); }
     .user-card { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; margin-bottom: 10px; background: var(--gun); border: 1px solid var(--border); }
     .user-avatar {
       width: 32px; height: 32px; border-radius: 50%;
@@ -486,6 +496,7 @@
     <input class="global-search-input" id="globalSearchInput" placeholder="Search everything… (Ctrl+K)" oninput="onGlobalSearch(this.value)" onclick="this.focus();this.select();" autocomplete="off" />
   </div>
 
+  <div class="nav-scroll">
   <div class="nav-section">Main</div>
   <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">
     <svg class="ni" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -559,6 +570,7 @@
     <svg class="ni" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     Settings
   </div>
+  </div><!-- /nav-scroll -->
 
   <div class="sidebar-footer">
     <div class="user-card">
