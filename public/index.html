@@ -292,7 +292,8 @@
     }
     .pain-card:hover { background: var(--gun); }
     .pain-card:hover::after { transform: scaleY(1); }
-    .pain-card__icon { font-size: 28px; margin-bottom: 16px; }
+    .pain-card__icon { margin-bottom: 18px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(200,100,26,.1); border: 1px solid rgba(200,100,26,.18); border-radius: 10px; }
+    .pain-card__icon svg { width: 20px; height: 20px; stroke: var(--copper); fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
     .pain-card__h { font-size: 16px; font-weight: 700; color: var(--ice); margin-bottom: 8px; }
     .pain-card__p { font-size: 14px; color: var(--fog); line-height: 1.6; }
 
@@ -836,32 +837,32 @@
     <h2 class="sec__h2">Every FFL Dealer<br>Knows This Pain.</h2>
     <div class="pain__grid">
       <div class="pain-card">
-        <div class="pain-card__icon">📋</div>
+        <div class="pain-card__icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 004 17V5a2 2 0 012-2h14v14"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="12" y2="14"/></svg></div>
         <div class="pain-card__h">Paper A&D books get lost</div>
         <div class="pain-card__p">ATF inspectors aren't forgiving. Handwritten records, illegible entries, missing disposition dates — violations stack fast.</div>
       </div>
       <div class="pain-card">
-        <div class="pain-card__icon">⏱️</div>
+        <div class="pain-card__icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg></div>
         <div class="pain-card__h">4473 forms take forever</div>
         <div class="pain-card__p">Manual paper forms, retyping info, waiting on fax confirmations. Your customer is standing at the counter for 45 minutes.</div>
       </div>
       <div class="pain-card">
-        <div class="pain-card__icon">💰</div>
+        <div class="pain-card__icon"><svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
         <div class="pain-card__h">Legacy software costs $300+/mo</div>
         <div class="pain-card__p">Built for distributors, priced for distributors. Small shops pay enterprise prices for features they never use.</div>
       </div>
       <div class="pain-card">
-        <div class="pain-card__icon">🏦</div>
+        <div class="pain-card__icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="7" y1="15" x2="7.01" y2="15" stroke-width="3"/><line x1="16" y1="13" x2="20" y2="17"/><line x1="20" y1="13" x2="16" y2="17"/></svg></div>
         <div class="pain-card__h">Payment processors drop FFLs</div>
         <div class="pain-card__p">Stripe, Square, PayPal — all have de-platformed gun shops. One policy change and your POS is dead.</div>
       </div>
       <div class="pain-card">
-        <div class="pain-card__icon">📶</div>
+        <div class="pain-card__icon"><svg viewBox="0 0 24 24"><line x1="2" y1="2" x2="22" y2="22"/><path d="M8.5 16.5a5 5 0 017 0M5 12.5a10 10 0 0111 1.5M2.5 9.5a15 15 0 0115 2.5M12 20h.01"/></svg></div>
         <div class="pain-card__h">No internet = no records</div>
         <div class="pain-card__p">Gun shows, remote ranges, spotty rural service. If your software needs the cloud, your business stops without it.</div>
       </div>
       <div class="pain-card">
-        <div class="pain-card__icon">🔍</div>
+        <div class="pain-card__icon"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
         <div class="pain-card__h">Multi-handgun reports missed</div>
         <div class="pain-card__p">ATF 3310.4 requires reporting two+ handguns to the same buyer within 5 days. Missing it is a federal violation.</div>
       </div>
