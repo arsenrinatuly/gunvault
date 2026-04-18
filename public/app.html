@@ -344,11 +344,11 @@
       pointer-events:none; color:var(--dim); display:flex; align-items:center;
     }
     .search-icon-prefix svg { width:14px; height:14px; stroke:var(--dim); fill:none; stroke-width:2; stroke-linecap:round; }
-    /* Dropdown */
+    /* Dropdown — fixed so nav-scroll overflow doesn't clip it */
     .search-dropdown {
-      display:none; position:absolute; top:calc(100% + 4px); left:8px; right:8px;
+      display:none; position:fixed;
       background:var(--surface); border:1px solid var(--border); border-radius:10px;
-      box-shadow:0 8px 32px rgba(0,0,0,.5); overflow:hidden; z-index:201;
+      box-shadow:0 8px 32px rgba(0,0,0,.6); overflow:hidden; z-index:2000;
       max-height:360px; overflow-y:auto;
     }
     .search-dropdown.open { display:block; }
@@ -2903,10 +2903,21 @@ async function doImport() {
 var gunSVG = '<svg viewBox="0 0 24 24"><path d="M3 12h13M3 12l3-3m-3 3l3 3M16 9h2l1 3h2v2h-2l-1 1h-2"/></svg>';
 var personSVG = '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
 
+function positionSearchDropdown() {
+  var inp = document.getElementById('globalSearchInput');
+  var dd  = document.getElementById('searchDropdown');
+  if (!inp || !dd) return;
+  var r = inp.getBoundingClientRect();
+  dd.style.top   = (r.bottom + 4) + 'px';
+  dd.style.left  = r.left + 'px';
+  dd.style.width = r.width + 'px';
+}
+
 function onGlobalSearch(q) {
   clearTimeout(searchDebounce);
   var dd = document.getElementById('searchDropdown');
   if (!q || q.length < 2) { dd.classList.remove('open'); dd.innerHTML = ''; return; }
+  positionSearchDropdown();
   dd.innerHTML = '<div class="search-loading">Searching…</div>';
   dd.classList.add('open');
   searchDebounce = setTimeout(function(){ doSearch(q); }, 280);
@@ -2951,6 +2962,7 @@ async function doSearch(q) {
         }).join('');
       }
     }
+    positionSearchDropdown();
     dd.innerHTML = html;
     dd.classList.add('open');
   } catch(e) {
