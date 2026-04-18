@@ -1515,7 +1515,7 @@
     </div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Required columns: <strong style="color:var(--text)">manufacturer, model, serial_number, caliber, type, acquisition_date, acquisition_from</strong></p>
     <div class="import-drop" id="importDrop" onclick="document.getElementById('importFile').click()">
-      <div style="font-size:32px">📂</div>
+      <div style="margin-bottom:4px"><svg viewBox="0 0 24 24" width="36" height="36" fill="none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 11v6m0 0l-2-2m2 2l2-2" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <p>Click to select a CSV file, or drag &amp; drop here</p>
       <input type="file" id="importFile" accept=".csv" style="display:none" onchange="onImportFile(this)" />
     </div>
@@ -3275,7 +3275,7 @@ async function loadInventoryAlerts() {
       hasAny = true;
       var div2 = document.createElement('div');
       div2.style.cssText = 'background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);border-radius:10px;padding:12px 16px;font-size:13px;color:#4ade80;display:flex;align-items:center;gap:10px';
-      div2.innerHTML = '<span style="font-size:16px">✅</span> <span>' + esc(String(recentCount)) + ' new acquisition(s) this week</span>';
+      div2.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" style="flex-shrink:0"><circle cx="12" cy="12" r="10" stroke="#4ade80" stroke-width="2"/><path d="M7.5 12.5l3 3 6-6" stroke="#4ade80" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>' + esc(String(recentCount)) + ' new acquisition(s) this week</span>';
       container.appendChild(div2);
     }
     section.style.display = hasAny ? 'block' : 'none';
@@ -3502,7 +3502,10 @@ async function loadReadiness() {
     html += '<h3 style="color:#fff;font-size:16px;margin:20px 0 12px">Compliance Checks</h3>';
     (r.checks || []).forEach(function(c) {
       html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-left:4px solid '+(c.pass?'#10b981':'#ef4444')+';border-radius:8px;margin-bottom:8px">';
-      html += '<div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:600">'+(c.pass?'✅':'⚠️')+' '+c.label+'</div>';
+      var cIco = c.pass
+        ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="10" stroke="#10b981" stroke-width="2"/><path d="M7.5 12.5l3 3 6-6" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        : '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" style="vertical-align:middle;margin-right:5px"><path d="M12 3L2 21h20L12 3z" fill="rgba(251,191,36,.18)" stroke="#fbbf24" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v5M12 17.5h.01" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/></svg>';
+      html += '<div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:600">'+cIco+c.label+'</div>';
       if (c.detail) html += '<div style="color:var(--muted);font-size:12px;margin-top:4px">'+c.detail+'</div>';
       html += '</div><div style="color:'+(c.pass?'#10b981':'#ef4444')+';font-weight:700;font-size:13px">'+c.weight+' pts</div>';
       html += '</div>';
@@ -3819,7 +3822,10 @@ async function aiValidate4473() {
     if (!box) return;
     var color = r.ready ? '#10b981' : '#ef4444';
     var html = '<div style="padding:12px 14px;background:rgba('+(r.ready?'16,185,129':'239,68,68')+',.08);border:1px solid '+color+';border-radius:8px;margin-top:12px">';
-    html += '<div style="color:'+color+';font-weight:700;font-size:14px;margin-bottom:6px">'+(r.ready?'✅ Ready to submit':'⚠️ Issues found')+'</div>';
+    var aiIco = r.ready
+      ? '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="10" stroke="#10b981" stroke-width="2"/><path d="M7.5 12.5l3 3 6-6" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" style="vertical-align:middle;margin-right:5px"><path d="M12 3L2 21h20L12 3z" fill="rgba(251,191,36,.18)" stroke="#fbbf24" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v5M12 17.5h.01" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/></svg>';
+    html += '<div style="color:'+color+';font-weight:700;font-size:14px;margin-bottom:6px">'+aiIco+(r.ready?'Ready to submit':'Issues found')+'</div>';
     html += '<p style="color:#cbd5e1;font-size:13px;margin:0 0 10px">'+(r.summary||'')+'</p>';
     if (r.issues && r.issues.length) {
       html += '<ul style="margin:0;padding-left:20px;color:#fca5a5;font-size:12px">';
