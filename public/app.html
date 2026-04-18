@@ -534,6 +534,10 @@
     <svg class="ni" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
     POS / Sales
   </div>
+  <div class="nav-item" id="nav-layaway" onclick="showPage('layaway')">
+    <svg class="ni" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    Layaway
+  </div>
 
   <div class="nav-section">Compliance</div>
   <div class="nav-item" id="nav-form4473" onclick="showPage('form4473')">
@@ -1272,6 +1276,123 @@
     </div>
   </div>
 
+  <!-- ═══ LAYAWAY ═══ -->
+  <div class="page" id="page-layaway">
+    <div class="page-header">
+      <div>
+        <h2>Layaway & Installments</h2>
+        <p>Track layaway agreements and send automatic payment reminders to customers by email.</p>
+      </div>
+      <button class="btn btn--red btn--sm" onclick="openLayawayModal()">+ New Layaway</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
+      <div class="stat-card">
+        <div class="stat-card__label">Active Layaways</div>
+        <div class="stat-card__value" id="lay-stat-active">—</div>
+        <div class="stat-card__sub">in progress</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Total Outstanding</div>
+        <div class="stat-card__value" id="lay-stat-outstanding">—</div>
+        <div class="stat-card__sub">remaining balance</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Due This Week</div>
+        <div class="stat-card__value" id="lay-stat-due">—</div>
+        <div class="stat-card__sub">payments upcoming</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <h3 id="lay-count">Layaway Agreements</h3>
+        <div class="toolbar-right">
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="setLayFilter('all',this)">All</button>
+            <button class="filter-tab" onclick="setLayFilter('active',this)">Active</button>
+            <button class="filter-tab" onclick="setLayFilter('completed',this)">Completed</button>
+            <button class="filter-tab" onclick="setLayFilter('cancelled',this)">Cancelled</button>
+          </div>
+          <input class="search-input" placeholder="Search customer, firearm…" id="lay-search" oninput="renderLayaways()" />
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th><th>Firearm</th><th>Total</th>
+              <th>Paid</th><th>Remaining</th><th>Progress</th>
+              <th>Next Due</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="lay-tbody"><tr><td colspan="9"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Layaway Modal -->
+  <div class="modal-overlay" id="layawayModal" onclick="if(event.target===this)closeLayawayModal()" style="display:none">
+    <div class="modal" style="max-width:520px;width:100%">
+      <div class="modal-header">
+        <h3 id="layModal-title">New Layaway Agreement</h3>
+        <button class="modal-close" onclick="closeLayawayModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="lay-edit-id" />
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="form-group" style="grid-column:span 2">
+            <label>Customer *</label>
+            <select id="lay-customer" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--white);font-size:13px">
+              <option value="">— Select customer —</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:span 2">
+            <label>Firearm (optional — link to A&D)</label>
+            <select id="lay-firearm" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--white);font-size:13px">
+              <option value="">— Select firearm —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Total Price *</label>
+            <input type="number" id="lay-total" step="0.01" placeholder="0.00" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>Deposit / Paid So Far</label>
+            <input type="number" id="lay-paid" step="0.01" placeholder="0.00" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>Installment Amount</label>
+            <input type="number" id="lay-installment" step="0.01" placeholder="e.g. 100.00" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>Next Payment Due</label>
+            <input type="date" id="lay-due-date" class="form-control" />
+          </div>
+          <div class="form-group" style="grid-column:span 2">
+            <label>Notes</label>
+            <textarea id="lay-notes" rows="2" placeholder="Any additional terms…" class="form-control" style="resize:vertical"></textarea>
+          </div>
+          <div class="form-group" id="lay-status-wrap" style="grid-column:span 2;display:none">
+            <label>Status</label>
+            <select id="lay-status" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--white);font-size:13px">
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div id="layModal-err" class="form-err-banner" style="display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--ghost btn--sm" onclick="closeLayawayModal()">Cancel</button>
+        <button class="btn btn--red btn--sm" onclick="saveLayaway()">Save Agreement</button>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <!-- ═══ ONBOARDING WIZARD MODAL ═══ -->
@@ -1738,6 +1859,7 @@ function showPage(name) {
   if (name === 'form4473')   { loadForms4473(); populate4473Dropdowns(); }
   if (name === 'pos')        { renderSales(); updatePosStats(); }
   if (name === 'gunsmith')   loadWorkOrders();
+  if (name === 'layaway')    loadLayaways();
   if (name === 'readiness')  loadReadiness();
   if (name === 'migrate')    { /* no auto-load */ }
   if (name === 'referrals')  loadReferrals();
@@ -3280,6 +3402,195 @@ async function loadInventoryAlerts() {
     }
     section.style.display = hasAny ? 'block' : 'none';
   } catch(e) { /* Silently fail — alerts are non-critical */ }
+}
+
+// ── Layaway ────────────────────────────────────
+var allLayaways = [];
+var layFilterMode = 'all';
+
+async function loadLayaways() {
+  try {
+    var data = await api('GET', '/api/app/layaways');
+    allLayaways = data.layaways || [];
+    renderLayaways();
+    updateLayStats();
+  } catch(e) { console.error('loadLayaways', e); }
+}
+
+function setLayFilter(mode, btn) {
+  layFilterMode = mode;
+  document.querySelectorAll('#page-layaway .filter-tab').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderLayaways();
+}
+
+function renderLayaways() {
+  var q = (document.getElementById('lay-search')?.value || '').toLowerCase();
+  var filtered = allLayaways.filter(function(l) {
+    if (layFilterMode !== 'all' && l.status !== layFilterMode) return false;
+    if (!q) return true;
+    var name = ((l.first_name||'') + ' ' + (l.last_name||'')).toLowerCase();
+    var gun  = ((l.manufacturer||'') + ' ' + (l.model||'') + ' ' + (l.serial_number||'')).toLowerCase();
+    return name.includes(q) || gun.includes(q);
+  });
+
+  var tbody = document.getElementById('lay-tbody');
+  document.getElementById('lay-count').textContent = 'Layaway Agreements (' + filtered.length + ')';
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><p>No layaway agreements found.</p></div></td></tr>';
+    return;
+  }
+
+  var today = new Date().toISOString().slice(0, 10);
+  tbody.innerHTML = filtered.map(function(l) {
+    var remaining = (parseFloat(l.total_amount) - parseFloat(l.amount_paid)).toFixed(2);
+    var pct = Math.min(100, Math.round((parseFloat(l.amount_paid) / parseFloat(l.total_amount)) * 100));
+    var overdue = l.next_due_date && l.next_due_date < today && l.status === 'active';
+    var dueColor = overdue ? '#f87171' : (l.next_due_date && l.next_due_date <= new Date(Date.now()+7*864e5).toISOString().slice(0,10) ? '#fbbf24' : 'var(--muted)');
+    var statusBadge = {
+      active: '<span class="badge badge--green">Active</span>',
+      completed: '<span class="badge" style="background:rgba(99,179,237,.12);color:#63b3ed">Completed</span>',
+      cancelled: '<span class="badge badge--gray">Cancelled</span>'
+    }[l.status] || l.status;
+    var customerName = l.first_name ? esc(l.first_name + ' ' + l.last_name) : '<span style="color:var(--muted)">—</span>';
+    var firearmDesc  = l.manufacturer ? esc(l.manufacturer + ' ' + l.model) + '<br><span style="font-family:monospace;font-size:10px;color:var(--muted)">' + esc(l.serial_number) + '</span>' : '<span style="color:var(--muted)">—</span>';
+    return '<tr>' +
+      '<td>' + customerName + '</td>' +
+      '<td>' + firearmDesc + '</td>' +
+      '<td style="font-weight:700">$' + parseFloat(l.total_amount).toFixed(2) + '</td>' +
+      '<td style="color:#4ade80">$' + parseFloat(l.amount_paid).toFixed(2) + '</td>' +
+      '<td style="color:var(--copper-h)">$' + remaining + '</td>' +
+      '<td style="min-width:80px"><div style="background:rgba(255,255,255,.06);border-radius:4px;height:6px;overflow:hidden"><div style="background:var(--copper);height:100%;width:' + pct + '%"></div></div><div style="font-size:10px;color:var(--muted);margin-top:2px">' + pct + '%</div></td>' +
+      '<td style="color:' + dueColor + ';font-family:monospace;font-size:12px">' + (l.next_due_date || '—') + (overdue ? ' <span style="font-size:9px;background:#f87171;color:#000;padding:1px 4px;border-radius:3px">OVERDUE</span>' : '') + '</td>' +
+      '<td>' + statusBadge + '</td>' +
+      '<td><div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        (l.status === 'active' ? '<button class="btn btn--ghost btn--sm" style="font-size:11px;padding:4px 8px" onclick="sendLayReminder(' + l.id + ')">✉ Remind</button>' : '') +
+        '<button class="btn btn--ghost btn--sm" style="font-size:11px;padding:4px 8px" onclick="editLayaway(' + l.id + ')">Edit</button>' +
+        '<button class="btn btn--ghost btn--sm" style="font-size:11px;padding:4px 8px;color:#f87171;border-color:#f87171" onclick="deleteLayaway(' + l.id + ')">✕</button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function updateLayStats() {
+  var active = allLayaways.filter(function(l) { return l.status === 'active'; });
+  var outstanding = active.reduce(function(sum, l) { return sum + (parseFloat(l.total_amount) - parseFloat(l.amount_paid)); }, 0);
+  var week = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  var today = new Date().toISOString().slice(0, 10);
+  var dueSoon = active.filter(function(l) { return l.next_due_date && l.next_due_date >= today && l.next_due_date <= week; }).length;
+  document.getElementById('lay-stat-active').textContent = active.length;
+  document.getElementById('lay-stat-outstanding').textContent = '$' + outstanding.toFixed(2);
+  document.getElementById('lay-stat-due').textContent = dueSoon;
+}
+
+function openLayawayModal() {
+  document.getElementById('lay-edit-id').value = '';
+  document.getElementById('lay-customer').value = '';
+  document.getElementById('lay-firearm').value = '';
+  document.getElementById('lay-total').value = '';
+  document.getElementById('lay-paid').value = '';
+  document.getElementById('lay-installment').value = '';
+  document.getElementById('lay-due-date').value = '';
+  document.getElementById('lay-notes').value = '';
+  document.getElementById('lay-status-wrap').style.display = 'none';
+  document.getElementById('layModal-title').textContent = 'New Layaway Agreement';
+  document.getElementById('layModal-err').style.display = 'none';
+  populateLayDropdowns();
+  document.getElementById('layawayModal').style.display = 'flex';
+}
+
+function closeLayawayModal() {
+  document.getElementById('layawayModal').style.display = 'none';
+}
+
+function editLayaway(id) {
+  var l = allLayaways.find(function(x) { return x.id === id; });
+  if (!l) return;
+  document.getElementById('lay-edit-id').value = l.id;
+  populateLayDropdowns();
+  setTimeout(function() {
+    document.getElementById('lay-customer').value = l.customer_id || '';
+    document.getElementById('lay-firearm').value  = l.firearm_id  || '';
+  }, 50);
+  document.getElementById('lay-total').value       = l.total_amount;
+  document.getElementById('lay-paid').value        = l.amount_paid;
+  document.getElementById('lay-installment').value = l.installment_amt || '';
+  document.getElementById('lay-due-date').value    = l.next_due_date || '';
+  document.getElementById('lay-notes').value       = l.notes || '';
+  document.getElementById('lay-status').value      = l.status || 'active';
+  document.getElementById('lay-status-wrap').style.display = 'block';
+  document.getElementById('layModal-title').textContent = 'Edit Layaway';
+  document.getElementById('layModal-err').style.display = 'none';
+  document.getElementById('layawayModal').style.display = 'flex';
+}
+
+function populateLayDropdowns() {
+  var cSel = document.getElementById('lay-customer');
+  var fSel = document.getElementById('lay-firearm');
+  cSel.innerHTML = '<option value="">— Select customer —</option>' +
+    (allCustomers || []).map(function(c) {
+      return '<option value="' + c.id + '">' + esc(c.first_name + ' ' + c.last_name) + (c.email ? ' (' + esc(c.email) + ')' : '') + '</option>';
+    }).join('');
+  fSel.innerHTML = '<option value="">— No firearm linked —</option>' +
+    (allFirearms || []).filter(function(f) { return !f.disposition_date; }).map(function(f) {
+      return '<option value="' + f.id + '">' + esc(f.manufacturer + ' ' + f.model) + ' — S/N ' + esc(f.serial_number) + '</option>';
+    }).join('');
+}
+
+async function saveLayaway() {
+  var errEl = document.getElementById('layModal-err');
+  errEl.style.display = 'none';
+  var total = parseFloat(document.getElementById('lay-total').value);
+  if (!total || isNaN(total)) {
+    errEl.textContent = 'Total price is required.';
+    errEl.style.display = 'block';
+    return;
+  }
+  var payload = {
+    customer_id:    document.getElementById('lay-customer').value    || null,
+    firearm_id:     document.getElementById('lay-firearm').value     || null,
+    total_amount:   total,
+    amount_paid:    parseFloat(document.getElementById('lay-paid').value) || 0,
+    installment_amt:parseFloat(document.getElementById('lay-installment').value) || null,
+    next_due_date:  document.getElementById('lay-due-date').value    || null,
+    status:         document.getElementById('lay-status').value      || 'active',
+    notes:          document.getElementById('lay-notes').value.trim()|| null,
+  };
+  try {
+    var editId = document.getElementById('lay-edit-id').value;
+    if (editId) {
+      await api('PATCH', '/api/app/layaways/' + editId, payload);
+      toast('Layaway updated');
+    } else {
+      await api('POST', '/api/app/layaways', payload);
+      toast('Layaway created');
+    }
+    closeLayawayModal();
+    loadLayaways();
+  } catch(e) {
+    errEl.textContent = e.message || 'Server error';
+    errEl.style.display = 'block';
+  }
+}
+
+async function deleteLayaway(id) {
+  if (!confirm('Delete this layaway agreement?')) return;
+  try {
+    await api('DELETE', '/api/app/layaways/' + id);
+    toast('Deleted');
+    loadLayaways();
+  } catch(e) { toast(e.message || 'Error', 'error'); }
+}
+
+async function sendLayReminder(id) {
+  var l = allLayaways.find(function(x) { return x.id === id; });
+  if (!l) return;
+  if (!l.customer_email) { toast('Customer has no email address', 'error'); return; }
+  try {
+    await api('POST', '/api/app/layaways/' + id + '/remind', {});
+    toast('Reminder sent to ' + l.customer_email);
+  } catch(e) { toast(e.message || 'Failed to send reminder', 'error'); }
 }
 
 // ── Work Orders (Gunsmithing) ──────────────────

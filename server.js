@@ -559,6 +559,62 @@ app.delete('/api/app/sales/:id', requireAuth, async (req, res) => {
   catch(e) { res.status(500).json({ error: 'Server error' }); }
 });
 
+// ── Layaways ──────────────────────────────────
+app.get('/api/app/layaways', requireAuth, async (req, res) => {
+  try { res.json({ layaways: await stmts.getLayaways(req.user.id) }); }
+  catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+app.post('/api/app/layaways', requireAuth, async (req, res) => {
+  try {
+    const { customer_id, firearm_id, total_amount, amount_paid, installment_amt, next_due_date, notes } = req.body;
+    if (!total_amount || isNaN(parseFloat(total_amount))) return res.status(400).json({ error: 'Total amount required' });
+    const r = await stmts.addLayaway({
+      user_id: req.user.id, customer_id: customer_id||null, firearm_id: firearm_id||null,
+      total_amount: parseFloat(total_amount), amount_paid: parseFloat(amount_paid)||0,
+      installment_amt: installment_amt ? parseFloat(installment_amt) : null,
+      next_due_date: next_due_date||null, notes: notes||null
+    });
+    res.status(201).json({ message: 'Layaway created', id: r.id });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+app.patch('/api/app/layaways/:id', requireAuth, async (req, res) => {
+  try {
+    const { amount_paid, installment_amt, next_due_date, status, notes } = req.body;
+    await stmts.updateLayaway({
+      id: req.params.id, user_id: req.user.id,
+      amount_paid: parseFloat(amount_paid)||0,
+      installment_amt: installment_amt ? parseFloat(installment_amt) : null,
+      next_due_date: next_due_date||null, status: status||'active', notes: notes||null
+    });
+    res.json({ message: 'Updated' });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+app.delete('/api/app/layaways/:id', requireAuth, async (req, res) => {
+  try { await stmts.deleteLayaway(req.params.id, req.user.id); res.json({ message: 'Deleted' }); }
+  catch(e) { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.post('/api/app/layaways/:id/remind', requireAuth, async (req, res) => {
+  try {
+    const lay = await stmts.getLayaway(req.params.id, req.user.id);
+    if (!lay) return res.status(404).json({ error: 'Not found' });
+    if (!lay.customer_email) return res.status(400).json({ error: 'Customer has no email address' });
+    const u = await stmts.getUserById(req.user.id);
+    const shopName = u.shop_name || u.name;
+    const firearmDesc = lay.manufacturer ? `${lay.manufacturer} ${lay.model} (S/N: ${lay.serial_number})` : 'Firearm';
+    await mailer.sendLayawayReminder({
+      shopName, customerName: `${lay.first_name} ${lay.last_name}`,
+      customerEmail: lay.customer_email, firearmDesc,
+      totalAmount: lay.total_amount, amountPaid: lay.amount_paid,
+      installmentAmt: lay.installment_amt, nextDueDate: lay.next_due_date || 'See shop'
+    });
+    res.json({ message: 'Reminder sent to ' + lay.customer_email });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
 // ── Work Orders (Gunsmithing) ─────────────────
 app.get('/api/app/work-orders', requireAuth, async (req, res) => {
   try {

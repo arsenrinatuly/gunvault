@@ -100,4 +100,58 @@ async function sendVerificationCode(user, code) {
   });
 }
 
-module.exports = { sendWelcome, sendPasswordReset, sendDemoConfirm, sendVerificationCode };
+async function sendLayawayReminder({ shopName, customerName, customerEmail, firearmDesc, totalAmount, amountPaid, installmentAmt, nextDueDate }) {
+  const remaining = (parseFloat(totalAmount) - parseFloat(amountPaid)).toFixed(2);
+  const pct = Math.round((parseFloat(amountPaid) / parseFloat(totalAmount)) * 100);
+  await sendMail({
+    to: customerEmail,
+    subject: `Payment Reminder — Your Layaway at ${shopName}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#06080F;padding:32px;border-radius:12px">
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="display:inline-block;background:linear-gradient(135deg,#C8641A,#8B3A0A);border-radius:10px;padding:12px 20px">
+            <span style="font-size:18px;font-weight:900;color:#fff;letter-spacing:.1em">BOUNDSTACK</span>
+          </div>
+        </div>
+        <h2 style="color:#E8EFF8;text-align:center;margin:0 0 6px;font-size:22px">Layaway Payment Reminder</h2>
+        <p style="color:#7A8BA0;text-align:center;margin:0 0 28px;font-size:14px">Hi ${customerName}, you have a payment coming up at <strong style="color:#C8641A">${shopName}</strong>.</p>
+
+        <div style="background:#0D1220;border:1px solid #1F2E46;border-radius:12px;padding:24px;margin-bottom:20px">
+          <div style="color:#7A8BA0;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Item on Layaway</div>
+          <div style="color:#E8EFF8;font-size:16px;font-weight:700;margin-bottom:20px">${firearmDesc}</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
+            <div>
+              <div style="color:#7A8BA0;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Total Price</div>
+              <div style="color:#E8EFF8;font-size:18px;font-weight:800">$${parseFloat(totalAmount).toFixed(2)}</div>
+            </div>
+            <div>
+              <div style="color:#7A8BA0;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Paid So Far</div>
+              <div style="color:#4ade80;font-size:18px;font-weight:800">$${parseFloat(amountPaid).toFixed(2)}</div>
+            </div>
+            <div>
+              <div style="color:#7A8BA0;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Remaining</div>
+              <div style="color:#C8641A;font-size:18px;font-weight:800">$${remaining}</div>
+            </div>
+          </div>
+
+          <div style="background:#06080F;border-radius:6px;height:8px;margin-bottom:20px;overflow:hidden">
+            <div style="background:linear-gradient(90deg,#C8641A,#E8841A);height:100%;width:${pct}%;border-radius:6px"></div>
+          </div>
+
+          <div style="background:rgba(200,100,26,.1);border:1px solid rgba(200,100,26,.3);border-radius:8px;padding:14px;text-align:center">
+            <div style="color:#7A8BA0;font-size:12px;margin-bottom:4px">Next Payment Due</div>
+            <div style="color:#C8641A;font-size:22px;font-weight:900">${nextDueDate}</div>
+            ${installmentAmt ? `<div style="color:#7A8BA0;font-size:12px;margin-top:4px">Payment amount: <strong style="color:#E8EFF8">$${parseFloat(installmentAmt).toFixed(2)}</strong></div>` : ''}
+          </div>
+        </div>
+
+        <p style="color:#7A8BA0;font-size:12px;text-align:center;margin:0">Questions? Contact <strong style="color:#E8EFF8">${shopName}</strong> directly.</p>
+        <hr style="border:none;border-top:1px solid #1F2E46;margin:20px 0">
+        <p style="color:#3A4A60;font-size:11px;text-align:center;letter-spacing:.06em;text-transform:uppercase">BoundStack — Compliant FFL Management Software</p>
+      </div>
+    `
+  });
+}
+
+module.exports = { sendWelcome, sendPasswordReset, sendDemoConfirm, sendVerificationCode, sendLayawayReminder };

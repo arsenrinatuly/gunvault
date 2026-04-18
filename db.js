@@ -344,6 +344,22 @@ async function initSchema() {
       created_at          TIMESTAMPTZ   DEFAULT NOW()
     )
   `);
+
+  await q(`
+    CREATE TABLE IF NOT EXISTS layaways (
+      id              SERIAL PRIMARY KEY,
+      user_id         INTEGER       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      customer_id     INTEGER       REFERENCES customers(id),
+      firearm_id      INTEGER       REFERENCES firearms(id),
+      total_amount    NUMERIC(10,2) NOT NULL,
+      amount_paid     NUMERIC(10,2) NOT NULL DEFAULT 0,
+      installment_amt NUMERIC(10,2),
+      next_due_date   TEXT,
+      status          TEXT          DEFAULT 'active',
+      notes           TEXT,
+      created_at      TIMESTAMPTZ   DEFAULT NOW()
+    )
+  `);
 }
 
 // Run schema init once at startup (idempotent)
@@ -704,6 +720,55 @@ const stmts = {
 
   deleteWorkOrder: (id, user_id) =>
     run('DELETE FROM work_orders WHERE id=$1 AND user_id=$2', [id, user_id]),
+
+  // ── Layaways ──────────────────────────────────
+  addLayaway: ({ user_id, customer_id, firearm_id, total_amount, amount_paid, installment_amt, next_due_date, notes }) =>
+    one(
+      `INSERT INTO layaways
+         (user_id,customer_id,firearm_id,total_amount,amount_paid,installment_amt,next_due_date,notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+      [user_id, customer_id||null, firearm_id||null, total_amount, amount_paid||0,
+       installment_amt||null, next_due_date||null, notes||null]),
+
+  getLayaways: (user_id) =>
+    all(
+      `SELECT l.*, c.first_name, c.last_name, c.email as customer_email, c.phone,
+              f.manufacturer, f.model, f.serial_number
+       FROM layaways l
+       LEFT JOIN customers c ON l.customer_id=c.id
+       LEFT JOIN firearms  f ON l.firearm_id=f.id
+       WHERE l.user_id=$1 ORDER BY l.created_at DESC`,
+      [user_id]),
+
+  getLayaway: (id, user_id) =>
+    one(
+      `SELECT l.*, c.first_name, c.last_name, c.email as customer_email,
+              f.manufacturer, f.model, f.serial_number
+       FROM layaways l
+       LEFT JOIN customers c ON l.customer_id=c.id
+       LEFT JOIN firearms  f ON l.firearm_id=f.id
+       WHERE l.id=$1 AND l.user_id=$2`,
+      [id, user_id]),
+
+  updateLayaway: ({ id, user_id, amount_paid, installment_amt, next_due_date, status, notes }) =>
+    run(
+      `UPDATE layaways SET amount_paid=$1, installment_amt=$2, next_due_date=$3, status=$4, notes=$5
+       WHERE id=$6 AND user_id=$7`,
+      [amount_paid, installment_amt||null, next_due_date||null, status||'active', notes||null, id, user_id]),
+
+  deleteLayaway: (id, user_id) =>
+    run('DELETE FROM layaways WHERE id=$1 AND user_id=$2', [id, user_id]),
+
+  getOverdueLayaways: (user_id, today) =>
+    all(
+      `SELECT l.*, c.first_name, c.last_name, c.email as customer_email,
+              f.manufacturer, f.model, f.serial_number
+       FROM layaways l
+       LEFT JOIN customers c ON l.customer_id=c.id
+       LEFT JOIN firearms  f ON l.firearm_id=f.id
+       WHERE l.user_id=$1 AND l.status='active'
+         AND l.next_due_date IS NOT NULL AND l.next_due_date <= $2`,
+      [user_id, today]),
 };
 
 // ─────────────────────────────────────────────
