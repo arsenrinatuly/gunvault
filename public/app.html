@@ -453,6 +453,7 @@
     .toast--success { border-color:rgba(74,222,128,.4); border-left:3px solid #4ade80; }
     .toast--error   { border-color:rgba(248,113,113,.4); border-left:3px solid #f87171; }
     @keyframes slideUp { from { transform:translateY(16px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+    @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
 
     /* ── Responsive ── */
     @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
@@ -602,7 +603,7 @@
   <div class="page active" id="page-dashboard">
     <div class="page-header">
       <div>
-        <h2 id="dashGreeting">Good morning 👋</h2>
+        <h2 id="dashGreeting">Good morning</h2>
         <p>Here's what's happening at your shop today</p>
       </div>
     </div>
@@ -633,7 +634,7 @@
     <div class="quick-actions">
       <button class="btn btn--red btn--sm" onclick="openAddFirearmModal()">+ Add Firearm</button>
       <button class="btn btn--ghost btn--sm" onclick="showPage('customers');setTimeout(openAddCustomerModal,80)">+ Add Customer</button>
-      <button class="btn btn--ghost btn--sm" onclick="printATFReport()">🖨 Print ATF Report</button>
+      <button class="btn btn--ghost btn--sm" onclick="printATFReport()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" style="vertical-align:middle;margin-right:5px"><path d="M6 9V3h12v6M6 18H4a1 1 0 01-1-1v-5a1 1 0 011-1h16a1 1 0 011 1v5a1 1 0 01-1 1h-2M6 14h12v7H6v-7z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>Print ATF Report</button>
     </div>
 
     <div id="alerts-section" style="margin-bottom:24px;display:none">
@@ -735,7 +736,7 @@
             <button class="filter-tab active" onclick="setADFilter('all',this)">All</button>
             <button class="filter-tab" onclick="setADFilter('stock',this)">In Stock</button>
             <button class="filter-tab" onclick="setADFilter('transferred',this)">Transferred</button>
-            <button class="filter-tab" onclick="setADFilter('nfa',this)">⚠️ NFA</button>
+            <button class="filter-tab" onclick="setADFilter('nfa',this)"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" style="vertical-align:middle;margin-right:4px"><path d="M12 3L2 21h20L12 3z" fill="rgba(251,191,36,.18)" stroke="#fbbf24" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v5M12 17.5h.01" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/></svg>NFA</button>
           </div>
           <input class="search-input" placeholder="Search serial, model…" id="adbook-search" oninput="renderFirearms()" />
         </div>
@@ -964,19 +965,19 @@
     <!-- Three check cards -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:24px">
       <div class="stat-card" style="cursor:pointer" onclick="runComplianceCheck('adbook')">
-        <div style="font-size:28px;margin-bottom:8px">📒</div>
+        <div style="margin-bottom:10px"><svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 004 17V5a2 2 0 012-2h14v14" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 10h6M9 14h4" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round"/></svg></div>
         <div class="stat-card__label">A&amp;D Book Check</div>
         <div style="font-size:13px;color:var(--muted);margin-top:4px">Scan for missing fields, date issues, serial anomalies</div>
         <button class="btn btn--ghost btn--sm" style="margin-top:14px;width:100%">Run Check →</button>
       </div>
       <div class="stat-card" style="cursor:pointer" onclick="runComplianceCheck('4473')">
-        <div style="font-size:28px;margin-bottom:8px">📋</div>
+        <div style="margin-bottom:10px"><svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5h6M9 12h6M9 16h4" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="stat-card__label">Form 4473 Check</div>
         <div style="font-size:13px;color:var(--muted);margin-top:4px">Verify NICS entries, citizenship fields, date consistency</div>
         <button class="btn btn--ghost btn--sm" style="margin-top:14px;width:100%">Run Check →</button>
       </div>
       <div class="stat-card" style="cursor:pointer" onclick="runComplianceCheck('full')">
-        <div style="font-size:28px;margin-bottom:8px">🔍</div>
+        <div style="margin-bottom:10px"><svg viewBox="0 0 24 24" width="30" height="30" fill="none"><circle cx="11" cy="11" r="7" stroke="#C8641A" stroke-width="1.75"/><path d="M11 8v3l2 2M16.5 16.5L22 22" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round"/></svg></div>
         <div class="stat-card__label">Full Audit Check</div>
         <div style="font-size:13px;color:var(--muted);margin-top:4px">Complete compliance scan — A&amp;D + 4473 + cross-references</div>
         <button class="btn btn--red btn--sm" style="margin-top:14px;width:100%">Full Scan →</button>
@@ -984,7 +985,7 @@
     </div>
     <!-- Results area -->
     <div id="compliance-loading" style="display:none;text-align:center;padding:48px">
-      <div style="font-size:32px;margin-bottom:12px">🔄</div>
+      <div style="margin-bottom:14px"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" style="animation:spin 1.2s linear infinite"><path d="M4 12a8 8 0 018-8 8 8 0 016.9 4M20 12a8 8 0 01-8 8 8 8 0 01-6.9-4" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round"/><path d="M20 4v4h-4M4 20v-4h4" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div style="color:var(--muted)">AI is scanning your records…</div>
     </div>
     <div id="compliance-results" style="display:none">
@@ -997,7 +998,7 @@
       </div>
     </div>
     <div id="compliance-clean" style="display:none;text-align:center;padding:48px">
-      <div style="font-size:40px;margin-bottom:12px">✅</div>
+      <div style="margin-bottom:16px"><svg viewBox="0 0 24 24" width="52" height="52" fill="none"><circle cx="12" cy="12" r="11" fill="rgba(200,100,26,.12)" stroke="#C8641A" stroke-width="1.5"/><path d="M7 12.5l3.5 3.5 6.5-7" stroke="#C8641A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div style="color:var(--green);font-size:16px;font-weight:700">No issues found!</div>
       <div style="color:var(--muted);font-size:13px;margin-top:6px">Your records look ATF-compliant.</div>
     </div>
@@ -1011,7 +1012,7 @@
         <p>Record firearm sales and track revenue. Use Quick Checkout for in-store transactions.</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn--ghost btn--sm" onclick="togglePosCheckout()">💳 Quick Checkout</button>
+        <button class="btn btn--ghost btn--sm" onclick="togglePosCheckout()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" style="vertical-align:middle;margin-right:5px"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.75"/><path d="M2 10h20" stroke="currentColor" stroke-width="1.75"/><path d="M6 15h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>Quick Checkout</button>
         <button class="btn btn--ghost btn--sm" onclick="exportSalesCSV()">⬇ Export CSV</button>
         <button class="btn btn--red btn--sm"   onclick="openAddSaleModal()">+ New Sale</button>
       </div>
@@ -1019,7 +1020,7 @@
 
     <!-- QUICK CHECKOUT (Real POS) -->
     <div id="pos-checkout" style="display:none;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:20px;margin-bottom:24px">
-      <h3 style="color:#fff;font-size:16px;margin:0 0 14px">💳 Quick Checkout</h3>
+      <h3 style="color:#fff;font-size:16px;margin:0 0 14px;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="#C8641A" stroke-width="1.75"/><path d="M2 10h20" stroke="#C8641A" stroke-width="1.75"/><path d="M6 15h4" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round"/></svg>Quick Checkout</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <div>
           <div style="margin-bottom:12px">
@@ -1044,7 +1045,7 @@
           <div style="display:flex;gap:6px;margin-bottom:6px"><select id="pos-t1-m" style="flex:1;padding:8px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#fff;font-size:13px"><option value="cash">Cash</option><option value="card">Card</option><option value="check">Check</option><option value="trade">Trade-in</option></select><input id="pos-t1-a" type="number" step="0.01" placeholder="Amount" style="width:120px;padding:8px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#fff;font-size:13px" /></div>
           <div style="display:flex;gap:6px;margin-bottom:14px"><select id="pos-t2-m" style="flex:1;padding:8px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#fff;font-size:13px"><option value="">— Second tender (optional) —</option><option value="cash">Cash</option><option value="card">Card</option><option value="check">Check</option><option value="trade">Trade-in</option></select><input id="pos-t2-a" type="number" step="0.01" placeholder="Amount" style="width:120px;padding:8px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#fff;font-size:13px" /></div>
 
-          <button class="btn btn--red btn--full" onclick="posCheckout()" style="padding:14px;font-size:15px;font-weight:700">💵 Complete Transaction</button>
+          <button class="btn btn--red btn--full" onclick="posCheckout()" style="padding:14px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Complete Transaction</button>
         </div>
       </div>
     </div>
@@ -1174,7 +1175,7 @@
     </div>
 
     <div class="settings-section">
-      <h3>📦 Data Backup</h3>
+      <h3 style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m8 4v10M4 7v10l8 4" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>Data Backup</h3>
       <p class="desc">Download a full copy of your records. ATF regulations require you to maintain backups at a separate physical location.</p>
       <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#fbbf24;line-height:1.6">
         ⚠️ <strong>ATF Requirement:</strong> Keep at least one backup copy stored separately from your primary device (e.g., USB drive in a safe, separate computer). Download and save regularly.<br><br>
@@ -1212,8 +1213,8 @@
   <!-- ═══ READINESS SCORE ═══ -->
   <div class="page" id="page-readiness">
     <div class="page-header">
-      <div><h2>🎯 ATF Inspection Readiness</h2><p>Your shop's compliance score. Fix issues before the ATF finds them.</p></div>
-      <button class="btn btn--red btn--sm" onclick="loadReadiness()">🔄 Recalculate</button>
+      <div><h2 style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="12" r="9" stroke="#C8641A" stroke-width="1.75"/><circle cx="12" cy="12" r="5" stroke="#C8641A" stroke-width="1.75"/><circle cx="12" cy="12" r="2" fill="#C8641A"/></svg>ATF Inspection Readiness</h2><p>Your shop's compliance score. Fix issues before the ATF finds them.</p></div>
+      <button class="btn btn--red btn--sm" onclick="loadReadiness()" style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none"><path d="M4 12a8 8 0 018-8 8 8 0 016.9 4M20 12a8 8 0 01-8 8 8 8 0 01-6.9-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 4v4h-4M4 20v-4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Recalculate</button>
     </div>
     <div id="readiness-content" style="padding:20px 0">
       <p style="color:var(--muted);font-size:13px">Loading readiness score…</p>
@@ -1223,11 +1224,11 @@
   <!-- ═══ MIGRATE DATA ═══ -->
   <div class="page" id="page-migrate">
     <div class="page-header">
-      <div><h2>📥 Migrate from Your Old System</h2><p>Import A&amp;D records from FastBound, Orchid eBound, Bravo, or a generic CSV.</p></div>
+      <div><h2 style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M12 3v13m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>Migrate from Your Old System</h2><p>Import A&amp;D records from FastBound, Orchid eBound, Bravo, or a generic CSV.</p></div>
     </div>
 
     <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:#93c5fd;line-height:1.6">
-      💡 <strong>How it works:</strong> Upload a CSV export from your current software → we preview the mapping → you review → click commit. Records with duplicate serial numbers are skipped (safe to re-run).
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="9" stroke="#93c5fd" stroke-width="1.75"/><path d="M12 8v4m0 4h.01" stroke="#93c5fd" stroke-width="2" stroke-linecap="round"/></svg><strong>How it works:</strong> Upload a CSV export from your current software → we preview the mapping → you review → click commit. Records with duplicate serial numbers are skipped (safe to re-run).
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
@@ -1249,21 +1250,21 @@
     <textarea id="mig-csv" placeholder="Or paste CSV text here…" style="width:100%;min-height:120px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--white);font-size:12px;font-family:monospace;margin-bottom:12px"></textarea>
 
     <div style="display:flex;gap:10px;margin-bottom:20px">
-      <button class="btn btn--ghost btn--sm" onclick="dryRunMigration()">🔍 Preview Mapping</button>
-      <button class="btn btn--red btn--sm" id="mig-commit-btn" onclick="commitMigration()" disabled>✅ Commit Import</button>
+      <button class="btn btn--ghost btn--sm" onclick="dryRunMigration()" style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.75"/><path d="M16.5 16.5L22 22" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>Preview Mapping</button>
+      <button class="btn btn--red btn--sm" id="mig-commit-btn" onclick="commitMigration()" disabled style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.75"/><path d="M7.5 12.5l3 3 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Commit Import</button>
     </div>
 
     <div id="mig-preview" style="display:none"></div>
 
     <div style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:14px;font-size:12px;color:#fbbf24;line-height:1.6;margin-top:24px">
-      📋 <strong>White-glove migration:</strong> If you're moving 500+ records, email <a href="mailto:migrate@boundstack.org" style="color:#fbbf24;text-decoration:underline">migrate@boundstack.org</a> and we'll do the import for you at no charge.
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" style="vertical-align:middle;margin-right:5px"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5h6" stroke="#fbbf24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg><strong>White-glove migration:</strong> If you're moving 500+ records, email <a href="mailto:migrate@boundstack.org" style="color:#fbbf24;text-decoration:underline">migrate@boundstack.org</a> and we'll do the import for you at no charge.
     </div>
   </div>
 
   <!-- ═══ REFERRALS ═══ -->
   <div class="page" id="page-referrals">
     <div class="page-header">
-      <div><h2>🎁 Referral Program</h2><p>Get $50 credit for every FFL you refer that signs up.</p></div>
+      <div><h2 style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M20 12v10H4V12M22 7H2v5h20V7zM12 22V7m0 0a3 3 0 01-3-3c0-2 3-2 3 0M12 7a3 3 0 003-3c0-2-3-2-3 0" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>Referral Program</h2><p>Get $50 credit for every FFL you refer that signs up.</p></div>
     </div>
 
     <div id="referral-content" style="padding:20px 0">
@@ -1291,16 +1292,16 @@
   <div style="max-width:900px;margin:0 auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid rgba(200,100,26,.3)">
       <div>
-        <h1 style="color:#fff;font-size:26px;font-weight:800;margin:0">📱 Gun Show Mode</h1>
+        <h1 style="color:#fff;font-size:26px;font-weight:800;margin:0;display:flex;align-items:center;gap:10px"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" stroke="#C8641A" stroke-width="1.75"/><path d="M8 21h8M12 17v4" stroke="#C8641A" stroke-width="1.75" stroke-linecap="round"/></svg>Gun Show Mode</h1>
         <p style="color:#94a3b8;font-size:13px;margin:4px 0 0" id="gs-status">Online · 0 queued</p>
       </div>
       <button class="btn btn--ghost btn--sm" onclick="exitGunShow()">Exit →</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
-      <button onclick="gsQuickFirearm()" style="padding:28px;background:#C8641A;color:#fff;border:none;border-radius:12px;font-size:20px;font-weight:700;cursor:pointer;min-height:120px">📦<br/>Add Firearm</button>
-      <button onclick="gsQuickCustomer()" style="padding:28px;background:#3b82f6;color:#fff;border:none;border-radius:12px;font-size:20px;font-weight:700;cursor:pointer;min-height:120px">👤<br/>Add Customer</button>
-      <button onclick="gsQuickSale()" style="padding:28px;background:#10b981;color:#fff;border:none;border-radius:12px;font-size:20px;font-weight:700;cursor:pointer;min-height:120px">💰<br/>Record Sale</button>
-      <button onclick="gsSyncNow()" style="padding:28px;background:#1e293b;border:2px solid rgba(255,255,255,.1);color:#fff;border-radius:12px;font-size:20px;font-weight:700;cursor:pointer;min-height:120px">🔄<br/>Sync Now</button>
+      <button onclick="gsQuickFirearm()" style="padding:28px;background:#C8641A;color:#fff;border:none;border-radius:12px;font-size:20px;font-weight:700;cursor:pointer;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px"><svg viewBox="0 0 24 24" width="34" height="34" fill="none"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m8 4v10M4 7v10l8 4" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>Add Firearm</button>
+      <button onclick="gsQuickCustomer()" style="padding:28px;background:#3b82f6;color:#fff;border:none;border-radius:12px;font-size:20px;font-weight:700;cursor:pointer;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px"><svg viewBox="0 0 24 24" width="34" height="34" fill="none"><circle cx="12" cy="8" r="4" stroke="#fff" stroke-width="1.75"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#fff" stroke-width="1.75" stroke-linecap="round"/></svg>Add Customer</button>
+      <button onclick="gsQuickSale()" style="padding:28px;background:#10b981;color:#fff;border:none;border-radius:12px;font-size:20px;font-weight:700;cursor:pointer;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px"><svg viewBox="0 0 24 24" width="34" height="34" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Record Sale</button>
+      <button onclick="gsSyncNow()" style="padding:28px;background:#1e293b;border:2px solid rgba(255,255,255,.1);color:#fff;border-radius:12px;font-size:20px;font-weight:700;cursor:pointer;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px"><svg viewBox="0 0 24 24" width="34" height="34" fill="none"><path d="M4 12a8 8 0 018-8 8 8 0 016.9 4M20 12a8 8 0 01-8 8 8 8 0 01-6.9-4" stroke="#fff" stroke-width="1.75" stroke-linecap="round"/><path d="M20 4v4h-4M4 20v-4h4" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>Sync Now</button>
     </div>
     <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:20px">
       <h3 style="color:#fff;font-size:15px;margin:0 0 12px">Offline Queue</h3>
@@ -1702,7 +1703,7 @@ async function init() {
     document.getElementById('userPlan').textContent   = (currentUser.plan || 'free') + ' plan';
     var h = new Date().getHours();
     var g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
-    document.getElementById('dashGreeting').textContent = g + ', ' + currentUser.name.split(' ')[0] + ' 👋';
+    document.getElementById('dashGreeting').textContent = g + ', ' + currentUser.name.split(' ')[0];
     await Promise.all([loadDashboard(), loadFirearms(), loadCustomers(), loadSales()]);
   } catch(e) {
     localStorage.removeItem('bs_token');
@@ -2327,7 +2328,10 @@ function confirmDeleteAccount() {
 function toast(msg, type) {
   var el = document.createElement('div');
   el.className = 'toast toast--' + (type || 'success');
-  el.innerHTML = (type === 'error' ? '❌' : '✅') + ' ' + esc(msg);
+  var ico = type === 'error'
+    ? '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" style="vertical-align:middle;margin-right:6px;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke="#f87171" stroke-width="2"/><path d="M15 9l-6 6M9 9l6 6" stroke="#f87171" stroke-width="2" stroke-linecap="round"/></svg>'
+    : '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" style="vertical-align:middle;margin-right:6px;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke="#C8641A" stroke-width="2"/><path d="M7.5 12.5l3 3 6-6" stroke="#C8641A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  el.innerHTML = ico + esc(msg);
   document.getElementById('toastContainer').appendChild(el);
   setTimeout(function(){ el.remove(); }, 3500);
 }
@@ -3833,7 +3837,7 @@ var _gsQueue = [];
 
 function gsUpdate() {
   var online = navigator.onLine;
-  document.getElementById('gs-status').textContent = (online ? '🟢 Online' : '🔴 Offline') + ' · ' + _gsQueue.length + ' queued';
+  document.getElementById('gs-status').innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(online?'#4ade80':'#f87171')+';margin-right:6px;vertical-align:middle"></span>'+(online?'Online':'Offline')+' · '+_gsQueue.length+' queued';
   var q = document.getElementById('gs-queue');
   if (!_gsQueue.length) { q.innerHTML = 'No pending operations.'; return; }
   q.innerHTML = _gsQueue.map(function(op, i) {
