@@ -1,28 +1,23 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-const configured = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
-
-const transporter = configured
-  ? nodemailer.createTransport({
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.EMAIL_PORT) || 587,
-      secure: false,
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-    })
-  : null;
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
-const FROM    = process.env.EMAIL_FROM || 'BoundStack <hello@boundstack.org>';
+const FROM    = 'BoundStack <hello@boundstack.org>';
 
 async function sendMail({ to, subject, html }) {
-  if (!configured) {
-    console.log('\n📧 [EMAIL — no SMTP configured, showing in console]');
+  if (!resend) {
+    console.log('\n📧 [EMAIL — no RESEND_API_KEY configured, showing in console]');
     console.log(`To: ${to}`);
     console.log(`Subject: ${subject}`);
     console.log(`Body: ${html.replace(/<[^>]+>/g, '')}\n`);
     return;
   }
-  await transporter.sendMail({ from: FROM, to, subject, html });
+  const { error } = await resend.emails.send({ from: FROM, to, subject, html });
+  if (error) {
+    console.error('[Resend error]', error);
+    throw new Error(error.message || 'Failed to send email');
+  }
 }
 
 // ── Templates ────────────────────────────────
