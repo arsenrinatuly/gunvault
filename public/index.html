@@ -595,6 +595,30 @@
     .modal__success h3 { font-size: 22px; font-weight: 700; color: var(--ice); margin-bottom: 8px; }
     .modal__success p { font-size: 14px; color: var(--fog); }
 
+    /* ── FORM VALIDATION ── */
+    .hero__input.f-invalid, .modal__input.f-invalid { border-color: #f87171 !important; box-shadow: 0 0 0 3px rgba(248,113,113,.15) !important; }
+    .hero__input.f-valid, .modal__input.f-valid { border-color: #4ade80 !important; }
+    .f-msg { font-size: 11px; margin-top: -4px; padding: 0 2px; display: none; }
+    .f-msg.show { display: block; }
+    .f-msg.err { color: #f87171; }
+    .f-msg.ok { color: #4ade80; }
+    .form-err-banner { background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.3); border-radius: 6px; color: #f87171; font-size: 13px; padding: 10px 14px; margin-bottom: 10px; display: none; }
+    .form-err-banner.show { display: block; }
+
+    /* ── VERIFY STEP ── */
+    .verify-step { display: none; }
+    .verify-step.show { display: block; }
+    .verify-code-input {
+      text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 28px;
+      font-weight: 700; letter-spacing: .3em; background: var(--gun);
+      border: 2px solid var(--copper); border-radius: var(--radius-sm);
+      color: var(--ice); padding: 16px; outline: none; width: 100%;
+    }
+    .verify-code-input:focus { box-shadow: 0 0 0 3px rgba(200,100,26,.2); }
+    .verify-hint { font-size: 13px; color: var(--fog); text-align: center; margin-bottom: 16px; line-height: 1.5; }
+    .resend-link { background: none; border: none; color: var(--copper); font-size: 12px; cursor: pointer; padding: 0; text-decoration: underline; font-family: inherit; }
+    .resend-link:hover { color: var(--copper-h); }
+
     /* ── REVEAL ANIMATIONS ── */
     .reveal { opacity: 0; transform: translateY(24px); transition: opacity .55s var(--ease), transform .55s var(--ease); }
     .reveal-d1 { transition-delay: .1s; }
@@ -638,7 +662,10 @@
   <div class="nav__inner">
     <a href="#top" class="nav__logo">
       <div class="nav__logo-mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none">
+          <path d="M12 2L3 6v6c0 5.25 3.75 10.15 9 11.32C17.25 22.15 21 17.25 21 12V6L12 2z" fill="#fff" opacity=".92"/>
+          <path d="M8.5 12.5l2.5 2.5 4.5-4.5" stroke="#C8641A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
       BoundStack
     </a>
@@ -691,30 +718,53 @@
     </div>
     <!-- Right — signup card -->
     <div class="hero__card">
-      <div class="hero__card-title">Create Your Account</div>
-      <div class="hero__card-sub">Free plan · 14-day Pro trial · No card required</div>
-      <form class="hero__form" id="signupFormHero">
-        <input class="hero__input" type="text" placeholder="Your name" required autocomplete="name" />
-        <input class="hero__input" type="email" placeholder="Email address" required autocomplete="email" />
-        <input class="hero__input" type="password" placeholder="Password (min 6 chars)" required autocomplete="new-password" />
-        <input class="hero__input" type="text" placeholder="FFL number (optional)" />
-        <select class="hero__input">
-          <option value="" disabled selected>Currently using…</option>
-          <option value="fastbound">FastBound</option>
-          <option value="fflsafe">FFLSafe</option>
-          <option value="bravo">Bravo</option>
-          <option value="orchid">Orchid / eBound</option>
-          <option value="paper">Paper / nothing</option>
-          <option value="other">Other</option>
-        </select>
-        <select class="hero__input">
-          <option value="free" selected>Free plan — get started at no cost</option>
-          <option value="starter">Starter — $49/mo</option>
-          <option value="pro">Pro — $99/mo (14-day trial)</option>
-        </select>
-        <button type="submit" class="btn btn--copper btn--full btn--lg">Create Free Account →</button>
-      </form>
-      <p class="hero__card-fine">By signing up you agree to our <a href="/terms" style="color:var(--copper)">Terms</a> and <a href="/privacy" style="color:var(--copper)">Privacy Policy</a>.</p>
+      <div id="heroSignupWrap">
+        <div class="hero__card-title">Create Your Account</div>
+        <div class="hero__card-sub">Free plan · 14-day Pro trial · No card required</div>
+        <div class="form-err-banner" id="heroFormErr"></div>
+        <form class="hero__form" id="signupFormHero" novalidate>
+          <input class="hero__input" id="h-name" type="text" placeholder="Your name *" autocomplete="name" />
+          <div class="f-msg err" id="h-name-err"></div>
+          <input class="hero__input" id="h-email" type="email" placeholder="Email address *" autocomplete="email" />
+          <div class="f-msg err" id="h-email-err"></div>
+          <input class="hero__input" id="h-pass" type="password" placeholder="Password (min 6 chars) *" autocomplete="new-password" />
+          <div class="f-msg err" id="h-pass-err"></div>
+          <input class="hero__input" id="h-ffl" type="text" placeholder="FFL number (optional)" />
+          <select class="hero__input" id="h-sw">
+            <option value="" disabled selected>Currently using…</option>
+            <option value="fastbound">FastBound</option>
+            <option value="fflsafe">FFLSafe</option>
+            <option value="bravo">Bravo</option>
+            <option value="orchid">Orchid / eBound</option>
+            <option value="paper">Paper / nothing</option>
+            <option value="other">Other</option>
+          </select>
+          <select class="hero__input" id="h-plan">
+            <option value="free" selected>Free plan — get started at no cost</option>
+            <option value="starter">Starter — $49/mo</option>
+            <option value="pro">Pro — $99/mo (14-day trial)</option>
+          </select>
+          <button type="submit" class="btn btn--copper btn--full btn--lg" id="heroSignupBtn">Create Free Account →</button>
+        </form>
+        <p class="hero__card-fine">By signing up you agree to our <a href="/terms" style="color:var(--copper)">Terms</a> and <a href="/privacy" style="color:var(--copper)">Privacy Policy</a>.</p>
+      </div>
+
+      <!-- Email verification step -->
+      <div class="verify-step" id="heroVerifyStep">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:40px;margin-bottom:10px">📧</div>
+          <div class="hero__card-title">Check Your Email</div>
+          <p class="verify-hint" id="heroVerifyHint">We sent a 6-digit code to your email address. Enter it below to activate your account.</p>
+        </div>
+        <div class="form-err-banner" id="heroVerifyErr"></div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <input class="verify-code-input" id="heroVerifyCode" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code" />
+          <button class="btn btn--copper btn--full btn--lg" onclick="submitHeroVerifyCode()" id="heroVerifyBtn">Verify &amp; Enter Dashboard →</button>
+        </div>
+        <div style="text-align:center;margin-top:14px;color:var(--fog);font-size:12px">
+          Didn't get it? <button class="resend-link" onclick="resendCode('hero')">Resend code</button>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1273,30 +1323,53 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
     <div class="modal__content" id="signup-form">
-      <h2>Start for Free</h2>
-      <p class="modal__sub">No credit card. Get your cloud A&D bound book live in 5 minutes.</p>
-      <form class="modal__form" id="signupFormEl">
-        <input class="modal__input" type="text" placeholder="Your name" required autocomplete="name" />
-        <input class="modal__input" type="email" placeholder="Email address" required autocomplete="email" />
-        <input class="modal__input" type="password" placeholder="Password (min. 6 characters)" required autocomplete="new-password" />
-        <input class="modal__input" type="text" placeholder="FFL number (optional)" />
-        <select class="modal__input">
-          <option value="" disabled selected>What are you currently using?</option>
-          <option value="fastbound">FastBound</option>
-          <option value="fflsafe">FFLSafe</option>
-          <option value="bravo">Bravo</option>
-          <option value="orchid">Orchid / eBound</option>
-          <option value="paper">Paper / nothing</option>
-          <option value="other">Other</option>
-        </select>
-        <select class="modal__input">
-          <option value="free" selected>Free plan — get started at no cost</option>
-          <option value="starter">Starter — $49/mo (interested)</option>
-          <option value="pro">Pro — $99/mo (interested)</option>
-        </select>
-        <button type="submit" class="btn btn--copper btn--full" style="padding:14px;font-size:14px">Create Free Account →</button>
-      </form>
-      <p class="modal__fine">By signing up you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
+      <div id="modalSignupWrap">
+        <h2>Start for Free</h2>
+        <p class="modal__sub">No credit card. Get your cloud A&D bound book live in 5 minutes.</p>
+        <div class="form-err-banner" id="modalFormErr"></div>
+        <form class="modal__form" id="signupFormEl" novalidate>
+          <input class="modal__input" id="m-name" type="text" placeholder="Your full name *" autocomplete="name" />
+          <div class="f-msg err" id="m-name-err"></div>
+          <input class="modal__input" id="m-email" type="email" placeholder="Email address *" autocomplete="email" />
+          <div class="f-msg err" id="m-email-err"></div>
+          <input class="modal__input" id="m-pass" type="password" placeholder="Password (min. 6 characters) *" autocomplete="new-password" />
+          <div class="f-msg err" id="m-pass-err"></div>
+          <input class="modal__input" id="m-ffl" type="text" placeholder="FFL number (optional)" />
+          <select class="modal__input" id="m-sw">
+            <option value="" disabled selected>What are you currently using?</option>
+            <option value="fastbound">FastBound</option>
+            <option value="fflsafe">FFLSafe</option>
+            <option value="bravo">Bravo</option>
+            <option value="orchid">Orchid / eBound</option>
+            <option value="paper">Paper / nothing</option>
+            <option value="other">Other</option>
+          </select>
+          <select class="modal__input" id="m-plan">
+            <option value="free" selected>Free plan — get started at no cost</option>
+            <option value="starter">Starter — $49/mo (interested)</option>
+            <option value="pro">Pro — $99/mo (interested)</option>
+          </select>
+          <button type="submit" class="btn btn--copper btn--full" style="padding:14px;font-size:14px" id="modalSignupBtn">Create Free Account →</button>
+        </form>
+        <p class="modal__fine">By signing up you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
+      </div>
+
+      <!-- Email verification step -->
+      <div class="verify-step" id="modalVerifyStep">
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="font-size:48px;margin-bottom:12px">📧</div>
+          <h2>Check Your Email</h2>
+          <p class="modal__sub" id="modalVerifyHint">Enter the 6-digit code we sent to your email to activate your account.</p>
+        </div>
+        <div class="form-err-banner" id="modalVerifyErr"></div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <input class="verify-code-input" id="modalVerifyCode" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code" />
+          <button class="btn btn--copper btn--full" style="padding:14px;font-size:14px" onclick="submitModalVerifyCode()" id="modalVerifyBtn">Verify &amp; Enter Dashboard →</button>
+        </div>
+        <div style="text-align:center;margin-top:16px;color:var(--fog);font-size:12px">
+          Didn't get it? <button class="resend-link" onclick="resendCode('modal')">Resend code</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1309,9 +1382,10 @@
     </button>
     <h2>Welcome Back</h2>
     <p class="modal__sub">Sign in to your BoundStack account.</p>
-    <form class="modal__form" id="signinFormEl">
-      <input class="modal__input" type="email" placeholder="Email address" required autocomplete="email" />
-      <input class="modal__input" type="password" placeholder="Password" required autocomplete="current-password" />
+    <div class="form-err-banner" id="signinFormErr"></div>
+    <form class="modal__form" id="signinFormEl" novalidate>
+      <input class="modal__input" id="si-email" type="email" placeholder="Email address" autocomplete="email" />
+      <input class="modal__input" id="si-pass" type="password" placeholder="Password" autocomplete="current-password" />
       <button type="submit" class="btn btn--copper btn--full" style="padding:14px;font-size:14px">Sign In →</button>
     </form>
     <p class="modal__fine" style="margin-top:12px">Don't have an account? <a href="#" id="switch-to-signup">Start free →</a></p>
@@ -1457,29 +1531,104 @@
     });
   }
 
+  /* ── Shared validation helpers ── */
+  var _pendingUserId = null;
+
+  function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()); }
+
+  function fieldErr(errId, msg) {
+    var el = $('#' + errId);
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function clearFieldErrs(ids) {
+    ids.forEach(function(id) {
+      var el = $('#' + id);
+      if (el) { el.textContent = ''; el.classList.remove('show'); }
+    });
+  }
+  function showBanner(bannerId, msg) {
+    var el = $('#' + bannerId);
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function hideBanner(bannerId) {
+    var el = $('#' + bannerId);
+    if (el) { el.textContent = ''; el.classList.remove('show'); }
+  }
+
+  function validateSignup(prefix) {
+    var nameEl  = $('#' + prefix + '-name');
+    var emailEl = $('#' + prefix + '-email');
+    var passEl  = $('#' + prefix + '-pass');
+    clearFieldErrs([prefix+'-name-err', prefix+'-email-err', prefix+'-pass-err']);
+    hideBanner(prefix === 'h' ? 'heroFormErr' : 'modalFormErr');
+    [nameEl, emailEl, passEl].forEach(function(el) { if(el) el.classList.remove('f-invalid','f-valid'); });
+    var ok = true;
+    if (!nameEl || !nameEl.value.trim() || nameEl.value.trim().length < 2) {
+      fieldErr(prefix+'-name-err', 'Please enter your full name (at least 2 characters)');
+      if (nameEl) nameEl.classList.add('f-invalid');
+      ok = false;
+    } else { if (nameEl) nameEl.classList.add('f-valid'); }
+    if (!emailEl || !isValidEmail(emailEl.value)) {
+      fieldErr(prefix+'-email-err', 'Enter a valid email address');
+      if (emailEl) emailEl.classList.add('f-invalid');
+      ok = false;
+    } else { if (emailEl) emailEl.classList.add('f-valid'); }
+    if (!passEl || passEl.value.length < 6) {
+      fieldErr(prefix+'-pass-err', 'Password must be at least 6 characters');
+      if (passEl) passEl.classList.add('f-invalid');
+      ok = false;
+    } else { if (passEl) passEl.classList.add('f-valid'); }
+    return ok;
+  }
+
+  function handleVerificationResponse(data, formPrefix) {
+    if (!data.needs_verification) return false;
+    _pendingUserId = data.userId;
+    if (formPrefix === 'h') {
+      $('#heroSignupWrap').style.display = 'none';
+      var step = $('#heroVerifyStep');
+      step.classList.add('show');
+      if (data.email) $('#heroVerifyHint').textContent = 'We sent a 6-digit code to ' + data.email + '. Enter it below to activate your account.';
+      setTimeout(function() { var c = $('#heroVerifyCode'); if(c) c.focus(); }, 100);
+    } else {
+      $('#modalSignupWrap').style.display = 'none';
+      var step = $('#modalVerifyStep');
+      step.classList.add('show');
+      if (data.email) $('#modalVerifyHint').textContent = 'Enter the 6-digit code we sent to ' + data.email + ' to activate your account.';
+      setTimeout(function() { var c = $('#modalVerifyCode'); if(c) c.focus(); }, 100);
+    }
+    return true;
+  }
+
   /* ── Hero inline signup form ── */
   var heroForm = $('#signupFormHero');
   if (heroForm) {
     heroForm.addEventListener('submit', async function(e) {
       e.preventDefault();
-      var btn = heroForm.querySelector('button[type=submit]');
+      if (!validateSignup('h')) return;
+      var btn = $('#heroSignupBtn');
       setBtn(btn, true, 'Create Free Account →');
+      hideBanner('heroFormErr');
       try {
-        var inputs = heroForm.querySelectorAll('input, select');
         var data = await api('POST', '/api/signup', {
-          name:             inputs[0].value,
-          email:            inputs[1].value,
-          password:         inputs[2].value,
-          ffl_number:       inputs[3].value || null,
-          current_software: inputs[4].value || null,
-          plan:             inputs[5].value || 'free',
+          name:             $('#h-name').value.trim(),
+          email:            $('#h-email').value.trim(),
+          password:         $('#h-pass').value,
+          ffl_number:       ($('#h-ffl').value || '').trim() || null,
+          current_software: $('#h-sw').value || null,
+          plan:             $('#h-plan').value || 'free',
           ref:              (new URLSearchParams(location.search).get('ref') || localStorage.getItem('bs_ref') || ''),
         });
+        if (handleVerificationResponse(data, 'h')) return;
         localStorage.setItem('bs_token', data.token);
         localStorage.setItem('gv_user',  JSON.stringify(data.user));
         window.location.href = '/app';
       } catch(err) {
-        showError(heroForm, err.message);
+        showBanner('heroFormErr', err.message);
         setBtn(btn, false, 'Create Free Account →');
       }
     });
@@ -1490,46 +1639,110 @@
   if (signupForm) {
     signupForm.addEventListener('submit', async function(e) {
       e.preventDefault();
-      var btn = signupForm.querySelector('button[type=submit]');
+      if (!validateSignup('m')) return;
+      var btn = $('#modalSignupBtn');
       setBtn(btn, true, 'Create Free Account →');
+      hideBanner('modalFormErr');
       try {
-        var inputs = signupForm.querySelectorAll('input, select');
         var data = await api('POST', '/api/signup', {
-          name:             inputs[0].value,
-          email:            inputs[1].value,
-          password:         inputs[2].value,
-          ffl_number:       inputs[3].value || null,
-          current_software: inputs[4].value || null,
-          plan:             inputs[5].value || 'free',
+          name:             $('#m-name').value.trim(),
+          email:            $('#m-email').value.trim(),
+          password:         $('#m-pass').value,
+          ffl_number:       ($('#m-ffl').value || '').trim() || null,
+          current_software: $('#m-sw').value || null,
+          plan:             $('#m-plan').value || 'free',
           ref:              (new URLSearchParams(location.search).get('ref') || localStorage.getItem('bs_ref') || ''),
         });
+        if (handleVerificationResponse(data, 'm')) return;
         localStorage.setItem('bs_token', data.token);
         localStorage.setItem('gv_user',  JSON.stringify(data.user));
         window.location.href = '/app';
       } catch(err) {
-        showError(signupForm, err.message);
+        showBanner('modalFormErr', err.message);
         setBtn(btn, false, 'Create Free Account →');
       }
     });
   }
 
+  /* ── Verify code (hero) ── */
+  window.submitHeroVerifyCode = async function() {
+    var code = ($('#heroVerifyCode').value || '').replace(/\D/g, '');
+    hideBanner('heroVerifyErr');
+    if (code.length !== 6) { showBanner('heroVerifyErr', 'Enter the 6-digit code from your email'); return; }
+    var btn = $('#heroVerifyBtn');
+    setBtn(btn, true, 'Verifying…');
+    try {
+      var data = await api('POST', '/api/verify-email', { userId: _pendingUserId, code: code });
+      localStorage.setItem('bs_token', data.token);
+      localStorage.setItem('gv_user',  JSON.stringify(data.user));
+      window.location.href = '/app';
+    } catch(err) { showBanner('heroVerifyErr', err.message); setBtn(btn, false, 'Verify & Enter Dashboard →'); }
+  };
+  var hvc = $('#heroVerifyCode');
+  if (hvc) hvc.addEventListener('keydown', function(e){ if(e.key==='Enter') window.submitHeroVerifyCode(); });
+
+  /* ── Verify code (modal) ── */
+  window.submitModalVerifyCode = async function() {
+    var code = ($('#modalVerifyCode').value || '').replace(/\D/g, '');
+    hideBanner('modalVerifyErr');
+    if (code.length !== 6) { showBanner('modalVerifyErr', 'Enter the 6-digit code from your email'); return; }
+    var btn = $('#modalVerifyBtn');
+    setBtn(btn, true, 'Verifying…');
+    try {
+      var data = await api('POST', '/api/verify-email', { userId: _pendingUserId, code: code });
+      localStorage.setItem('bs_token', data.token);
+      localStorage.setItem('gv_user',  JSON.stringify(data.user));
+      window.location.href = '/app';
+    } catch(err) { showBanner('modalVerifyErr', err.message); setBtn(btn, false, 'Verify & Enter Dashboard →'); }
+  };
+  var mvc = $('#modalVerifyCode');
+  if (mvc) mvc.addEventListener('keydown', function(e){ if(e.key==='Enter') window.submitModalVerifyCode(); });
+
+  /* ── Resend verification code ── */
+  window.resendCode = async function(form) {
+    if (!_pendingUserId) return;
+    var bannerId = form === 'hero' ? 'heroVerifyErr' : 'modalVerifyErr';
+    try {
+      await api('POST', '/api/resend-verification', { userId: _pendingUserId });
+      showBanner(bannerId, '✓ New code sent — check your email');
+      var el = $('#' + bannerId);
+      if (el) { el.style.color = '#4ade80'; el.style.borderColor = 'rgba(74,222,128,.3)'; el.style.background = 'rgba(74,222,128,.06)'; }
+      setTimeout(function() { hideBanner(bannerId); var el2 = $('#'+bannerId); if(el2){ el2.style.color=''; el2.style.borderColor=''; el2.style.background=''; } }, 4000);
+    } catch(err) { showBanner(bannerId, err.message); }
+  };
+
   var signinForm = $('#signinFormEl');
   if (signinForm) {
     signinForm.addEventListener('submit', async function(e) {
       e.preventDefault();
+      var emailEl = $('#si-email'), passEl = $('#si-pass');
+      hideBanner('signinFormErr');
+      var valid = true;
+      if (emailEl) emailEl.classList.remove('f-invalid','f-valid');
+      if (passEl) passEl.classList.remove('f-invalid','f-valid');
+      if (!emailEl || !isValidEmail(emailEl.value)) {
+        if (emailEl) emailEl.classList.add('f-invalid');
+        showBanner('signinFormErr', 'Enter a valid email address');
+        valid = false;
+      }
+      if (!passEl || !passEl.value) {
+        if (passEl) passEl.classList.add('f-invalid');
+        if (valid) showBanner('signinFormErr', 'Password is required');
+        valid = false;
+      }
+      if (!valid) return;
       var btn = signinForm.querySelector('button[type=submit]');
       setBtn(btn, true, 'Sign In →');
       try {
-        var inputs = signinForm.querySelectorAll('input');
         var data = await api('POST', '/api/signin', {
-          email:    inputs[0].value,
-          password: inputs[1].value,
+          email:    emailEl.value.trim(),
+          password: passEl.value,
         });
         localStorage.setItem('bs_token', data.token);
         localStorage.setItem('gv_user',  JSON.stringify(data.user));
         window.location.href = '/app';
       } catch(err) {
-        showError(signinForm, err.message);
+        showBanner('signinFormErr', err.message);
         setBtn(btn, false, 'Sign In →');
       }
     });

@@ -48,8 +48,14 @@
     .logo-icon {
       width: 30px; height: 30px;
       background: linear-gradient(135deg, var(--copper), #8B3A0A);
-      border-radius: 6px; display: grid; place-items: center; font-size: 14px; flex-shrink: 0;
+      border-radius: 6px; display: grid; place-items: center; flex-shrink: 0;
       box-shadow: 0 0 12px rgba(200,100,26,.5);
+    }
+    .logo-icon svg { width: 16px; height: 16px; }
+    .nav-item svg.ni {
+      width: 15px; height: 15px; flex-shrink: 0;
+      fill: none; stroke: currentColor;
+      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
     }
     .nav-section {
       font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600;
@@ -464,7 +470,7 @@
 
 <!-- MOBILE HEADER -->
 <header class="mobile-header">
-  <div class="mobile-logo"><div class="logo-icon">🛡</div> BoundStack</div>
+  <div class="mobile-logo"><div class="logo-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L3 6v6c0 5.25 3.75 10.15 9 11.32C17.25 22.15 21 17.25 21 12V6L12 2z" fill="#fff" opacity=".92"/><path d="M8.5 12.5l2.5 2.5 4.5-4.5" stroke="#C8641A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div> BoundStack</div>
   <button class="hamburger" onclick="toggleSidebar()" aria-label="Open menu">
     <span></span><span></span><span></span>
   </button>
@@ -473,7 +479,7 @@
 
 <!-- SIDEBAR -->
 <nav class="sidebar" id="sidebar">
-  <div class="sidebar-logo"><div class="logo-icon">🛡</div> BoundStack</div>
+  <div class="sidebar-logo"><div class="logo-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L3 6v6c0 5.25 3.75 10.15 9 11.32C17.25 22.15 21 17.25 21 12V6L12 2z" fill="#fff" opacity=".92"/><path d="M8.5 12.5l2.5 2.5 4.5-4.5" stroke="#C8641A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div> BoundStack</div>
 
   <div class="search-bar-wrap">
     <span class="search-icon-prefix">🔍</span>
@@ -481,33 +487,78 @@
   </div>
 
   <div class="nav-section">Main</div>
-  <div class="nav-item active" id="nav-dashboard"  onclick="showPage('dashboard')">📊 Dashboard</div>
+  <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">
+    <svg class="ni" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </div>
 
   <div class="nav-section">Records</div>
-  <div class="nav-item" id="nav-inventory" onclick="showPage('inventory')">📦 Inventory</div>
-  <div class="nav-item" id="nav-adbook"    onclick="showPage('adbook')">📒 A&amp;D Book</div>
-  <div class="nav-item" id="nav-customers" onclick="showPage('customers')">👥 Customers</div>
+  <div class="nav-item" id="nav-inventory" onclick="showPage('inventory')">
+    <svg class="ni" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+    Inventory
+  </div>
+  <div class="nav-item" id="nav-adbook" onclick="showPage('adbook')">
+    <svg class="ni" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    A&amp;D Book
+  </div>
+  <div class="nav-item" id="nav-customers" onclick="showPage('customers')">
+    <svg class="ni" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Customers
+  </div>
 
   <div class="nav-section">Sales</div>
-  <div class="nav-item" id="nav-pos"       onclick="showPage('pos')">💰 POS / Sales</div>
+  <div class="nav-item" id="nav-pos" onclick="showPage('pos')">
+    <svg class="ni" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    POS / Sales
+  </div>
 
   <div class="nav-section">Compliance</div>
-  <div class="nav-item" id="nav-form4473"  onclick="showPage('form4473')">📋 Form 4473</div>
-  <div class="nav-item" id="nav-reports"   onclick="showPage('reports')">📈 Reports</div>
-  <div class="nav-item" id="nav-readiness" onclick="showPage('readiness')">🎯 Readiness</div>
-  <div class="nav-item" id="nav-auditlog"  onclick="showPage('auditlog')">🔎 Audit Log</div>
-  <div class="nav-item" id="nav-compliance" onclick="showPage('compliance')">🤖 AI Compliance</div>
+  <div class="nav-item" id="nav-form4473" onclick="showPage('form4473')">
+    <svg class="ni" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>
+    Form 4473
+  </div>
+  <div class="nav-item" id="nav-reports" onclick="showPage('reports')">
+    <svg class="ni" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Reports
+  </div>
+  <div class="nav-item" id="nav-readiness" onclick="showPage('readiness')">
+    <svg class="ni" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+    Readiness
+  </div>
+  <div class="nav-item" id="nav-auditlog" onclick="showPage('auditlog')">
+    <svg class="ni" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Audit Log
+  </div>
+  <div class="nav-item" id="nav-compliance" onclick="showPage('compliance')">
+    <svg class="ni" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V4"/><circle cx="12" cy="4" r="1.5" fill="currentColor" stroke="none"/><line x1="7" y1="16" x2="7" y2="16.01"/><line x1="12" y1="16" x2="12" y2="16.01"/><line x1="17" y1="16" x2="17" y2="16.01"/></svg>
+    AI Compliance
+  </div>
 
   <div class="nav-section">Services</div>
-  <div class="nav-item" id="nav-gunsmith" onclick="showPage('gunsmith')">🔧 Gunsmithing</div>
+  <div class="nav-item" id="nav-gunsmith" onclick="showPage('gunsmith')">
+    <svg class="ni" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+    Gunsmithing
+  </div>
 
   <div class="nav-section">Growth</div>
-  <div class="nav-item" id="nav-migrate"   onclick="showPage('migrate')">📥 Migrate Data</div>
-  <div class="nav-item" id="nav-referrals" onclick="showPage('referrals')">🎁 Referrals</div>
-  <div class="nav-item" id="nav-gunshow"   onclick="window.location.href='/app?gunshow=1'">📱 Gun Show Mode</div>
+  <div class="nav-item" id="nav-migrate" onclick="showPage('migrate')">
+    <svg class="ni" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Migrate Data
+  </div>
+  <div class="nav-item" id="nav-referrals" onclick="showPage('referrals')">
+    <svg class="ni" viewBox="0 0 24 24"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+    Referrals
+  </div>
+  <div class="nav-item" id="nav-gunshow" onclick="window.location.href='/app?gunshow=1'">
+    <svg class="ni" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    Gun Show Mode
+  </div>
 
   <div class="nav-section">Account</div>
-  <div class="nav-item" id="nav-settings"  onclick="showPage('settings')">⚙️ Settings</div>
+  <div class="nav-item" id="nav-settings" onclick="showPage('settings')">
+    <svg class="ni" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Settings
+  </div>
 
   <div class="sidebar-footer">
     <div class="user-card">
@@ -1870,16 +1921,25 @@ function clearFirearmForm() {
 }
 
 async function submitFirearm() {
-  var v = {
-    manufacturer: document.getElementById('fm-mfr').value.trim(),
-    model:        document.getElementById('fm-model').value.trim(),
-    serial_number:document.getElementById('fm-serial').value.trim(),
-    caliber:      document.getElementById('fm-caliber').value.trim(),
-    type:         document.getElementById('fm-type').value,
-    acquisition_date: document.getElementById('fm-acqdate').value,
-    acquisition_from: document.getElementById('fm-acqfrom').value.trim()
-  };
-  for (var k in v) { if (!v[k]) { toast('Please fill in all required fields', 'error'); return; } }
+  var requiredDefs = [
+    { id:'fm-mfr',     key:'manufacturer',     label:'Manufacturer' },
+    { id:'fm-model',   key:'model',             label:'Model' },
+    { id:'fm-serial',  key:'serial_number',     label:'Serial Number' },
+    { id:'fm-caliber', key:'caliber',           label:'Caliber' },
+    { id:'fm-type',    key:'type',              label:'Type' },
+    { id:'fm-acqdate', key:'acquisition_date',  label:'Acquisition Date' },
+    { id:'fm-acqfrom', key:'acquisition_from',  label:'Acquired From' },
+  ];
+  // Clear previous highlights
+  requiredDefs.forEach(function(f) { var el = document.getElementById(f.id); if (el) el.style.borderColor = ''; });
+  var v = {}; var missing = [];
+  requiredDefs.forEach(function(f) {
+    var el = document.getElementById(f.id);
+    var val = el ? el.value.trim() : '';
+    v[f.key] = val;
+    if (!val) { missing.push(f.label); if (el) el.style.borderColor = 'var(--danger)'; }
+  });
+  if (missing.length) { toast('Required: ' + missing.join(', '), 'error'); return; }
   v.importer = document.getElementById('fm-imp').value.trim() || null;
   v.notes    = document.getElementById('fm-notes').value.trim() || null;
   // NFA fields
@@ -2134,12 +2194,21 @@ function clearCustomerForm() {
 }
 
 async function submitCustomer() {
-  var first = document.getElementById('cm-first').value.trim();
-  var last  = document.getElementById('cm-last').value.trim();
-  if (!first || !last) { toast('First and last name are required', 'error'); return; }
+  var firstEl = document.getElementById('cm-first'), lastEl = document.getElementById('cm-last');
+  var emailEl = document.getElementById('cm-email');
+  [firstEl, lastEl, emailEl].forEach(function(el) { if(el) el.style.borderColor = ''; });
+  var valid = true;
+  if (!firstEl || !firstEl.value.trim()) { if(firstEl) firstEl.style.borderColor='var(--danger)'; valid=false; }
+  if (!lastEl  || !lastEl.value.trim())  { if(lastEl)  lastEl.style.borderColor ='var(--danger)'; valid=false; }
+  var emailVal = emailEl ? emailEl.value.trim() : '';
+  if (emailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailVal)) {
+    emailEl.style.borderColor = 'var(--danger)';
+    toast('Enter a valid email address', 'error'); return;
+  }
+  if (!valid) { toast('First and last name are required', 'error'); return; }
   var body = {
-    first_name: first, last_name: last,
-    email:     document.getElementById('cm-email').value.trim()   || null,
+    first_name: firstEl.value.trim(), last_name: lastEl.value.trim(),
+    email:     emailVal || null,
     phone:     document.getElementById('cm-phone').value.trim()   || null,
     address:   document.getElementById('cm-address').value.trim() || null,
     id_type:   document.getElementById('cm-idtype').value         || null,
@@ -2196,8 +2265,10 @@ function prefillSettings() {
 }
 
 async function saveProfile() {
-  var name = document.getElementById('s-name').value.trim();
-  if (!name) { toast('Name is required', 'error'); return; }
+  var nameEl = document.getElementById('s-name');
+  var name = nameEl ? nameEl.value.trim() : '';
+  if (nameEl) nameEl.style.borderColor = '';
+  if (!name) { if (nameEl) nameEl.style.borderColor='var(--danger)'; toast('Full name is required', 'error'); return; }
   try {
     await api('PATCH', '/api/app/me', {
       name: name,
@@ -2217,12 +2288,13 @@ async function saveProfile() {
 }
 
 async function changePassword() {
-  var cur  = document.getElementById('s-curpw').value;
-  var nw   = document.getElementById('s-newpw').value;
-  var conf = document.getElementById('s-conpw').value;
-  if (!cur || !nw || !conf) { toast('All fields required', 'error'); return; }
-  if (nw !== conf) { toast('New passwords do not match', 'error'); return; }
-  if (nw.length < 6) { toast('New password must be at least 6 characters', 'error'); return; }
+  var curEl = document.getElementById('s-curpw'), nwEl = document.getElementById('s-newpw'), confEl = document.getElementById('s-conpw');
+  [curEl, nwEl, confEl].forEach(function(el){ if(el) el.style.borderColor=''; });
+  var cur = curEl ? curEl.value : '', nw = nwEl ? nwEl.value : '', conf = confEl ? confEl.value : '';
+  if (!cur) { if(curEl) curEl.style.borderColor='var(--danger)'; toast('Current password is required', 'error'); return; }
+  if (!nw)  { if(nwEl)  nwEl.style.borderColor ='var(--danger)'; toast('New password is required', 'error'); return; }
+  if (nw.length < 6) { if(nwEl) nwEl.style.borderColor='var(--danger)'; toast('New password must be at least 6 characters', 'error'); return; }
+  if (nw !== conf) { if(confEl) confEl.style.borderColor='var(--danger)'; toast('New passwords do not match', 'error'); return; }
   try {
     await api('PATCH', '/api/app/password', { current_password: cur, new_password: nw });
     document.getElementById('s-curpw').value = '';

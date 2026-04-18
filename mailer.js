@@ -80,4 +80,29 @@ async function sendDemoConfirm(demo) {
   });
 }
 
-module.exports = { sendWelcome, sendPasswordReset, sendDemoConfirm };
+async function sendVerificationCode(user, code) {
+  await sendMail({
+    to: user.email,
+    subject: 'BoundStack — Your Verification Code',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#06080F;padding:32px;border-radius:12px">
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="display:inline-block;background:linear-gradient(135deg,#C8641A,#8B3A0A);border-radius:10px;padding:14px 20px;margin-bottom:16px">
+            <span style="font-family:Arial,sans-serif;font-size:20px;font-weight:900;color:#fff;letter-spacing:.1em">BOUNDSTACK</span>
+          </div>
+        </div>
+        <h2 style="color:#E8EFF8;text-align:center;margin:0 0 8px;font-size:26px">Verify Your Email</h2>
+        <p style="color:#7A8BA0;text-align:center;margin:0 0 32px;font-size:15px">Hi ${user.name}, enter this code to activate your account:</p>
+        <div style="background:#0D1220;border:2px solid #C8641A;border-radius:12px;padding:28px;text-align:center;margin-bottom:28px">
+          <div style="font-family:monospace;font-size:48px;font-weight:900;color:#C8641A;letter-spacing:.3em;line-height:1">${code}</div>
+          <div style="color:#7A8BA0;font-size:12px;margin-top:12px;letter-spacing:.08em;text-transform:uppercase">This code expires in 15 minutes</div>
+        </div>
+        <p style="color:#7A8BA0;font-size:13px;text-align:center;margin:0">If you didn't sign up for BoundStack, you can safely ignore this email.</p>
+        <hr style="border:none;border-top:1px solid #1F2E46;margin:24px 0">
+        <p style="color:#3A4A60;font-size:11px;text-align:center;letter-spacing:.06em;text-transform:uppercase">BoundStack — Compliant FFL Management Software</p>
+      </div>
+    `
+  });
+}
+
+module.exports = { sendWelcome, sendPasswordReset, sendDemoConfirm, sendVerificationCode };

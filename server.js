@@ -122,11 +122,11 @@ function audit(req, tableName, recordId, action, oldData, newData) {
 app.post('/api/signup', async (req, res) => {
   try {
     const { name, email, password, ffl_number, current_software, plan } = req.body;
-    if (!ok(name))                            return res.status(400).json({ error: 'Name required' });
-    if (!isEmail(email))                      return res.status(400).json({ error: 'Valid email required' });
-    if (!ok(password) || password.length < 6) return res.status(400).json({ error: 'Password min 6 chars' });
+    if (!ok(name))                            return res.status(400).json({ error: 'Name is required' });
+    if (!isEmail(email))                      return res.status(400).json({ error: 'Enter a valid email address' });
+    if (!ok(password) || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
     const existing = await stmts.getUserByEmail(email.toLowerCase().trim());
-    if (existing) return res.status(409).json({ error: 'Account already exists with this email' });
+    if (existing) return res.status(409).json({ error: 'An account with this email already exists' });
 
     const allowedPlans = ['free', 'starter', 'pro'];
     const selectedPlan = allowedPlans.includes(plan) ? plan : 'free';
@@ -136,12 +136,12 @@ app.post('/api/signup', async (req, res) => {
       password_hash: hash, ffl_number: ffl_number || null, current_software: current_software || null, plan: selectedPlan
     });
 
-    // 14-day Pro trial for new signups + unique referral code
+    // 14-day Pro trial + unique referral code
     const refCode = crypto.randomBytes(4).toString('hex').toUpperCase();
     const trialEnds = new Date(Date.now() + 14 * 86400000).toISOString();
     await run('UPDATE users SET trial_ends_at=$1, referral_code=$2 WHERE id=$3', [trialEnds, refCode, user.id]);
 
-    // Handle referral credit if ref code was passed
+    // Handle referral credit
     const refFrom = (req.body.ref || '').toUpperCase().trim();
     if (refFrom) {
       const referrer = await stmts.getUserByReferralCode(refFrom);
@@ -153,9 +153,44 @@ app.post('/api/signup', async (req, res) => {
 
     upsertLeadFromUser({ ...user, ffl_number, current_software }, 'signup').catch(() => {});
     stmts.addWaitlist({ email: user.email, source: 'signup' }).catch(() => {});
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+
+    // Generate 6-digit email verification code
+    const verifyCode = String(Math.floor(100000 + Math.random() * 900000));
+    const verifyExpires = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 min
+    await stmts.setEmailVerifyCode(user.id, verifyCode, verifyExpires);
+    mailer.sendVerificationCode({ name: user.name, email: user.email }, verifyCode).catch(() => {});
+
+    res.status(201).json({ needs_verification: true, userId: user.id, email: user.email });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Verify email code ─────────────────────────
+app.post('/api/verify-email', async (req, res) => {
+  try {
+    const { userId, code } = req.body;
+    if (!userId || !ok(String(code || ''))) return res.status(400).json({ error: 'userId and code required' });
+    const user = await stmts.checkVerifyCode(parseInt(userId), String(code).trim());
+    if (!user) return res.status(400).json({ error: 'Invalid or expired code. Request a new one.' });
+    await stmts.markEmailVerified(user.id);
     mailer.sendWelcome(user).catch(() => {});
-    res.status(201).json({ message: 'Account created!', token, user: { ...user, plan: user.plan || 'free' } });
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ message: 'Email verified!', token, user: { id: user.id, name: user.name, email: user.email, plan: user.plan || 'free', ffl_number: user.ffl_number, onboarding_done: user.onboarding_done } });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Resend verification code ──────────────────
+app.post('/api/resend-verification', authLimiter, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    const u = await stmts.getVerifyData(parseInt(userId));
+    if (!u) return res.status(404).json({ error: 'User not found' });
+    if (u.email_verified === 1) return res.status(400).json({ error: 'Email already verified' });
+    const verifyCode = String(Math.floor(100000 + Math.random() * 900000));
+    const verifyExpires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    await stmts.setEmailVerifyCode(u.id, verifyCode, verifyExpires);
+    await mailer.sendVerificationCode({ name: u.name, email: u.email }, verifyCode);
+    res.json({ message: 'New code sent' });
   } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 

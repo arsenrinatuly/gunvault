@@ -319,6 +319,11 @@ async function initSchema() {
     )
   `);
 
+  // Email verification (DEFAULT 1 = backward-compat for existing users)
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified INTEGER DEFAULT 1`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_code TEXT`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_expires TIMESTAMPTZ`);
+
   // Gunsmithing work orders
   await q(`
     CREATE TABLE IF NOT EXISTS work_orders (
@@ -398,6 +403,20 @@ const stmts = {
 
   cleanOldTokens: () =>
     run("DELETE FROM password_reset_tokens WHERE expires_at < NOW() OR used=1"),
+
+  // ── Email verification ─────────────────────
+  setEmailVerifyCode: (id, code, expires_at) =>
+    run('UPDATE users SET email_verify_code=$1, email_verify_expires=$2, email_verified=0 WHERE id=$3',
+      [code, expires_at, id]),
+
+  getVerifyData: (id) =>
+    one('SELECT id,name,email,plan,ffl_number,onboarding_done,email_verified,email_verify_expires FROM users WHERE id=$1 LIMIT 1', [id]),
+
+  checkVerifyCode: (id, code) =>
+    one("SELECT id,name,email,plan,ffl_number,onboarding_done FROM users WHERE id=$1 AND email_verify_code=$2 AND email_verify_expires > NOW() AND email_verified=0 LIMIT 1", [id, code]),
+
+  markEmailVerified: (id) =>
+    run("UPDATE users SET email_verified=1, email_verify_code=NULL, email_verify_expires=NULL WHERE id=$1", [id]),
 
   // ── Locations ─────────────────────────────
   addLocation: ({ user_id, name, address, ffl_number, is_primary }) =>
