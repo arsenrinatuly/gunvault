@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FFL Compliance Blog — ATF Guides, Software Reviews & Dealer Tips | BoundStack</title>
+  <meta name="description" content="Free guides for FFL dealers: ATF inspection prep, bound book requirements, e4473 best practices, and honest software comparisons. Written by people who know the regs." />
+  <link rel="canonical" href="https://www.boundstack.org/blog" />
+
+  <meta property="og:title" content="FFL Compliance Blog — BoundStack" />
+  <meta property="og:description" content="ATF inspection guides, FFL software reviews, and compliance tips for gun shop owners." />
+  <meta property="og:url" content="https://www.boundstack.org/blog" />
+  <meta property="og:type" content="website" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "BoundStack FFL Compliance Blog",
+    "url": "https://www.boundstack.org/blog",
+    "description": "ATF compliance guides, FFL software reviews, and dealer tips.",
+    "publisher": { "@type": "Organization", "name": "BoundStack", "url": "https://www.boundstack.org" }
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: #06080F; color: #E8EFF8; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    ul { list-style: none; }
+
+    :root {
+      --ink: #06080F; --steel: #0D1220; --gun: #141C2E; --plate: #1C2640;
+      --copper: #C8641A; --copper-h: #E8762A; --gold: #B8965C;
+      --ice: #E8EFF8; --fog: #7A8BA0; --mist: #2A3A52;
+      --radius: 10px; --radius-sm: 6px; --mw: 1160px;
+    }
+
+    /* NAV */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      height: 62px; background: rgba(6,8,15,.92); backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(200,100,26,.18);
+    }
+    .nav__inner {
+      max-width: var(--mw); margin: 0 auto; padding: 0 28px;
+      height: 100%; display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav__logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--ice); letter-spacing: .08em;
+    }
+    .nav__logo-mark {
+      width: 32px; height: 32px; background: linear-gradient(135deg, var(--copper), #8B3A0A);
+      border-radius: 6px; display: grid; place-items: center; box-shadow: 0 0 14px rgba(200,100,26,.5);
+    }
+    .nav__links { display: flex; align-items: center; gap: 28px; }
+    .nav__links a {
+      font-size: 12px; font-weight: 600; color: var(--fog);
+      letter-spacing: .06em; text-transform: uppercase; transition: color .2s; position: relative;
+    }
+    .nav__links a::after {
+      content: ''; position: absolute; bottom: -4px; left: 0; right: 0; height: 1.5px;
+      background: var(--copper); transform: scaleX(0); transition: transform .2s;
+    }
+    .nav__links a:hover, .nav__links a.active { color: var(--ice); }
+    .nav__links a:hover::after, .nav__links a.active::after { transform: scaleX(1); }
+    .nav__right { display: flex; gap: 8px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: var(--radius-sm); border: none;
+      font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+      cursor: pointer; font-family: inherit; transition: all .2s;
+    }
+    .btn--copper { background: var(--copper); color: #fff; }
+    .btn--copper:hover { background: var(--copper-h); }
+    .btn--ghost { background: transparent; color: rgba(255,255,255,.75); border: 1.5px solid rgba(255,255,255,.18); }
+    .btn--ghost:hover { background: rgba(255,255,255,.07); color: #fff; }
+
+    /* HERO */
+    .blog-hero {
+      padding: 110px 28px 60px;
+      background: var(--ink);
+      border-bottom: 1px solid var(--mist);
+      text-align: center;
+    }
+    .blog-hero__tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(200,100,26,.12); border: 1px solid rgba(200,100,26,.3);
+      color: var(--copper); font-size: 11px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      padding: 5px 14px; border-radius: 20px; margin-bottom: 20px;
+    }
+    .blog-hero__tag::before { content: ''; width: 6px; height: 6px; background: var(--copper); border-radius: 50%; }
+    .blog-hero h1 {
+      font-family: 'Bebas Neue', sans-serif; font-size: clamp(42px, 7vw, 72px);
+      letter-spacing: .03em; margin-bottom: 16px; line-height: 1;
+    }
+    .blog-hero p { color: var(--fog); font-size: 17px; max-width: 520px; margin: 0 auto; }
+
+    /* GRID */
+    .blog-wrap { max-width: var(--mw); margin: 0 auto; padding: 60px 28px 80px; }
+
+    .blog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 24px;
+    }
+
+    /* CARD */
+    .blog-card {
+      background: var(--steel); border: 1px solid var(--mist);
+      border-radius: var(--radius); overflow: hidden;
+      transition: border-color .2s, transform .2s;
+      display: flex; flex-direction: column;
+    }
+    .blog-card:hover { border-color: rgba(200,100,26,.5); transform: translateY(-3px); }
+
+    .blog-card__thumb {
+      height: 180px; background: var(--gun);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 56px; position: relative; overflow: hidden;
+    }
+    .blog-card__thumb::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(200,100,26,.15), transparent);
+    }
+    .blog-card__thumb-grid {
+      position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(200,100,26,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(200,100,26,.05) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+    .blog-card__emoji { position: relative; z-index: 1; }
+
+    .blog-card__body { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+    .blog-card__tag {
+      font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--copper); margin-bottom: 10px;
+    }
+    .blog-card__title {
+      font-size: 18px; font-weight: 700; color: var(--ice); line-height: 1.35;
+      margin-bottom: 12px; transition: color .2s;
+    }
+    .blog-card:hover .blog-card__title { color: var(--copper); }
+    .blog-card__excerpt { font-size: 14px; color: var(--fog); line-height: 1.6; flex: 1; margin-bottom: 20px; }
+    .blog-card__meta {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; color: var(--fog); padding-top: 16px;
+      border-top: 1px solid var(--mist);
+    }
+    .blog-card__read {
+      color: var(--copper); font-weight: 700; font-size: 12px;
+      letter-spacing: .04em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .blog-card__read::after { content: '→'; }
+
+    /* FEATURED */
+    .blog-card--featured {
+      grid-column: 1 / -1;
+      flex-direction: row;
+    }
+    .blog-card--featured .blog-card__thumb {
+      width: 380px; height: auto; flex-shrink: 0;
+      font-size: 72px;
+    }
+    .blog-card--featured .blog-card__title { font-size: 22px; }
+
+    /* SIDEBAR / CTA */
+    .blog-sidebar { margin-top: 60px; }
+    .sidebar-cta {
+      background: linear-gradient(135deg, rgba(200,100,26,.12), rgba(20,28,46,.8));
+      border: 1px solid rgba(200,100,26,.35); border-radius: var(--radius);
+      padding: 36px; text-align: center;
+    }
+    .sidebar-cta h3 {
+      font-family: 'Bebas Neue', sans-serif; font-size: 28px;
+      letter-spacing: .03em; margin-bottom: 10px;
+    }
+    .sidebar-cta p { color: var(--fog); font-size: 15px; margin-bottom: 24px; }
+
+    /* FOOTER */
+    .footer { border-top: 1px solid var(--mist); padding: 32px 28px; text-align: center; color: var(--fog); font-size: 13px; }
+    .footer a { color: var(--copper); }
+
+    @media (max-width: 700px) {
+      .nav__links, .nav__right .btn--ghost { display: none; }
+      .blog-card--featured { flex-direction: column; }
+      .blog-card--featured .blog-card__thumb { width: 100%; height: 180px; }
+      .blog-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav__inner">
+    <a href="/" class="nav__logo">
+      <div class="nav__logo-mark">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none">
+          <path d="M12 2L3 6v6c0 5.25 3.75 10.15 9 11.32C17.25 22.15 21 17.25 21 12V6L12 2z" fill="#fff" opacity=".92"/>
+          <path d="M8.5 12.5l2.5 2.5 4.5-4.5" stroke="#C8641A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      BoundStack
+    </a>
+    <nav class="nav__links">
+      <a href="/#features">Features</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/blog" class="active">Blog</a>
+      <a href="/#faq">FAQ</a>
+    </nav>
+    <div class="nav__right">
+      <a href="/app" class="btn btn--ghost">Sign In</a>
+      <a href="/app" class="btn btn--copper">Start Free</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="blog-hero">
+  <div class="blog-hero__tag">FFL Knowledge Base</div>
+  <h1>The FFL Compliance Blog</h1>
+  <p>ATF inspection guides, software reviews, and dealer tips — written by people who know the regs.</p>
+</div>
+
+<!-- ARTICLES -->
+<div class="blog-wrap">
+  <div class="blog-grid">
+
+    <!-- FEATURED: ATF Inspection Guide -->
+    <a href="/atf-inspection-guide" class="blog-card blog-card--featured">
+      <div class="blog-card__thumb">
+        <div class="blog-card__thumb-grid"></div>
+        <span class="blog-card__emoji">🛡️</span>
+      </div>
+      <div class="blog-card__body">
+        <div class="blog-card__tag">ATF Compliance · Featured</div>
+        <div class="blog-card__title">How to Prepare for an ATF Compliance Inspection in 2026</div>
+        <div class="blog-card__excerpt">
+          ATF license revocations hit 195 in FY2024 — up 122% year-over-year. Here's exactly what IOIs look for, the most common violations by category, and a checklist to walk out of your next inspection with your license intact.
+        </div>
+        <div class="blog-card__meta">
+          <span>April 2026 · 8 min read</span>
+          <span class="blog-card__read">Read Guide</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Software Comparison -->
+    <a href="/best-ffl-software" class="blog-card">
+      <div class="blog-card__thumb">
+        <div class="blog-card__thumb-grid"></div>
+        <span class="blog-card__emoji">⚖️</span>
+      </div>
+      <div class="blog-card__body">
+        <div class="blog-card__tag">Software Review</div>
+        <div class="blog-card__title">Best FFL Software 2026: FastBound vs FFLSafe vs BoundStack</div>
+        <div class="blog-card__excerpt">
+          Honest comparison of the top FFL compliance platforms. We break down features, pricing, real dealer feedback, and which solution fits which type of operation.
+        </div>
+        <div class="blog-card__meta">
+          <span>April 2026 · 10 min read</span>
+          <span class="blog-card__read">Read Review</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Electronic Bound Book (coming soon placeholder with real content) -->
+    <a href="/atf-inspection-guide#bound-book" class="blog-card">
+      <div class="blog-card__thumb">
+        <div class="blog-card__thumb-grid"></div>
+        <span class="blog-card__emoji">📒</span>
+      </div>
+      <div class="blog-card__body">
+        <div class="blog-card__tag">Compliance Basics</div>
+        <div class="blog-card__title">Electronic Bound Book Requirements: What FFLs Need to Know</div>
+        <div class="blog-card__excerpt">
+          The ATF accepts electronic A&amp;D records — but only if they meet specific requirements. US-based hosting, 20-year retention, inspector accessibility. Here's what your e-bound book must do to be compliant.
+        </div>
+        <div class="blog-card__meta">
+          <span>April 2026 · 6 min read</span>
+          <span class="blog-card__read">Read Article</span>
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- CTA -->
+  <div class="blog-sidebar">
+    <div class="sidebar-cta">
+      <h3>Pass Your Next ATF Inspection — Guaranteed</h3>
+      <p>BoundStack's AI compliance engine catches errors in your bound book and 4473s before the IOI does. Free to start.</p>
+      <a href="/app" class="btn btn--copper" style="padding:14px 32px;font-size:14px;">Start Free — No Card Required</a>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p>
+    &copy; 2026 <a href="/">BoundStack</a> — FFL Software That Actually Works.
+    &nbsp;|&nbsp;<a href="/privacy">Privacy</a>
+    &nbsp;|&nbsp;<a href="/terms">Terms</a>
+    &nbsp;|&nbsp;<a href="/blog">Blog</a>
+  </p>
+</footer>
+
+</body>
+</html>
