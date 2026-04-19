@@ -1468,12 +1468,15 @@ app.get('/api/app/backup', requireAuth, async (req, res) => {
   } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
-app.get('/app',            (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));
-app.get('/admin',          (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reset-password.html')));
-app.get('/privacy',        (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
-app.get('/terms',          (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
-app.get('*',               (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/app',                    (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));
+app.get('/admin',                  (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/reset-password',         (req, res) => res.sendFile(path.join(__dirname, 'public', 'reset-password.html')));
+app.get('/privacy',                (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
+app.get('/terms',                  (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
+app.get('/blog',                   (req, res) => res.sendFile(path.join(__dirname, 'public', 'blog.html')));
+app.get('/atf-inspection-guide',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'atf-inspection-guide.html')));
+app.get('/best-ffl-software',      (req, res) => res.sendFile(path.join(__dirname, 'public', 'best-ffl-software.html')));
+app.get('*',                       (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ─── Start (local only — Vercel uses module.exports) ───
 if (require.main === module) {
