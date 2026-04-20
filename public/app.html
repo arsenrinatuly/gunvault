@@ -576,7 +576,7 @@
     <svg class="ni" viewBox="0 0 24 24"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
     Referrals
   </div>
-  <div class="nav-item" id="nav-gunshow" onclick="window.location.href='/app?gunshow=1'">
+      <div class="nav-item" id="nav-gunshow" onclick="enterGunShowMode()">
     <svg class="ni" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
     Gun Show Mode
   </div>
@@ -728,7 +728,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn--ghost btn--sm" onclick="printATFReport()">🖨 ATF Report</button>
         <button class="btn btn--ghost btn--sm" onclick="exportFirearmsCSV()">⬇ Export CSV</button>
-        <button class="btn btn--ghost btn--sm" onclick="openImportModal()">⬆ Import CSV</button>
+        <button class="btn btn--ghost btn--sm" id="adbookImportBtn" onclick="openImportModal()">⬆ Import CSV</button>
         <button class="btn btn--red btn--sm"   onclick="openAddFirearmModal()">+ Add Entry</button>
       </div>
     </div>
@@ -853,7 +853,7 @@
       </div>
 
       <!-- Section B: Questions -->
-      <div class="f4473-section">
+      <div class="f4473-section" id="f4473-signature-section">
         <h4>Section B — Eligibility Questions</h4>
         <div class="q-row"><div class="q-text">21.a. Are you the actual transferee/buyer of the firearm(s)?</div><div class="q-ans"><label><input type="radio" name="q21a" value="yes"> Yes</label><label><input type="radio" name="q21a" value="no"> No</label></div></div>
         <div class="q-row"><div class="q-text">21.b. Are you under indictment or information in any court for a felony?</div><div class="q-ans"><label><input type="radio" name="q21b" value="yes"> Yes</label><label><input type="radio" name="q21b" value="no"> No</label></div></div>
@@ -1175,7 +1175,7 @@
       <h3>Locations</h3>
       <p class="desc">Manage multiple store locations or gun ranges under one account</p>
       <div id="locations-list" style="margin-bottom:14px"></div>
-      <button class="btn btn--ghost btn--sm" onclick="openLocationModal()">+ Add Location</button>
+      <button class="btn btn--ghost btn--sm" id="locationsAddBtn" onclick="openLocationModal()">+ Add Location</button>
     </div>
 
     <div class="settings-section">
@@ -1768,9 +1768,9 @@
     <h3 style="font-size:20px;font-weight:800;color:var(--white);margin-bottom:8px">Free Plan Limit Reached</h3>
     <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:22px" id="upgradeLimitMsg">You've reached the free plan limit. Upgrade to unlock unlimited records.</p>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
-      <button class="btn btn--ghost" onclick="toast('Email billing@BoundStack.com to upgrade','success');closeUpgradeModal()">Starter — $49/mo · 500 records</button>
-      <button class="btn btn--red"   onclick="toast('Email billing@BoundStack.com to upgrade','success');closeUpgradeModal()">Pro — $99/mo · Unlimited ⭐</button>
-      <button class="btn btn--ghost" onclick="toast('Email billing@BoundStack.com to upgrade','success');closeUpgradeModal()">Enterprise — $149/mo · Multi-location</button>
+      <button class="btn btn--ghost" onclick="toast('Email billing@BoundStack.com to upgrade','success');closeUpgradeModal()">Starter — $49/mo · Unlimited A&D</button>
+      <button class="btn btn--red"   onclick="toast('Email billing@BoundStack.com to upgrade','success');closeUpgradeModal()">Pro — $99/mo · AI + Multi-location ⭐</button>
+      <button class="btn btn--ghost" onclick="toast('Email billing@BoundStack.com to upgrade','success');closeUpgradeModal()">Enterprise — Contact Us</button>
     </div>
     <button class="btn btn--ghost btn--sm" onclick="closeUpgradeModal()">Maybe later</button>
   </div>
@@ -1802,7 +1802,99 @@ var searchDebounce = null;
 var allSales = [];
 var editingSaleId = null;
 
+var PLAN_ORDER = ['free', 'starter', 'pro'];
+var PLAN_RULES = {
+  free: {
+    firearmsLimit: 500,
+    pos: false,
+    gunShow: false,
+    ai4473: false,
+    aiCompliance: false,
+    readiness: false,
+    migration: false,
+    multiLocation: false,
+    esign4473: false
+  },
+  starter: {
+    firearmsLimit: null,
+    pos: true,
+    gunShow: true,
+    ai4473: false,
+    aiCompliance: false,
+    readiness: false,
+    migration: false,
+    multiLocation: false,
+    esign4473: true
+  },
+  pro: {
+    firearmsLimit: null,
+    pos: true,
+    gunShow: true,
+    ai4473: true,
+    aiCompliance: true,
+    readiness: true,
+    migration: true,
+    multiLocation: true,
+    esign4473: true
+  }
+};
+var FEATURE_MESSAGES = {
+  pos: 'POS and barcode scanning are available on Starter or Pro.',
+  gunShow: 'Gun Show Mode is available on Starter or Pro.',
+  ai4473: 'AI 4473 pre-submit validation is available on Pro only.',
+  aiCompliance: 'AI compliance checks are available on Pro only.',
+  readiness: 'Inspection readiness score is available on Pro only.',
+  migration: 'CSV migration tools are available on Pro only.',
+  multiLocation: 'Multi-location support is available on Pro only.'
+};
+
 if (!TOKEN) { window.location.href = '/'; }
+
+function normalizePlan(plan) {
+  return PLAN_RULES[plan] ? plan : 'free';
+}
+
+function getPlanRules(plan) {
+  return PLAN_RULES[normalizePlan(plan)];
+}
+
+function currentPlan() {
+  return normalizePlan(currentUser && currentUser.plan);
+}
+
+function hasPlan(requiredPlan) {
+  return PLAN_ORDER.indexOf(currentPlan()) >= PLAN_ORDER.indexOf(normalizePlan(requiredPlan));
+}
+
+function hasFeature(featureKey) {
+  return !!getPlanRules(currentPlan())[featureKey];
+}
+
+function requireFeatureUI(featureKey, customMessage) {
+  if (hasFeature(featureKey)) return true;
+  showUpgradeModal(customMessage || FEATURE_MESSAGES[featureKey] || 'Upgrade required for this feature.');
+  return false;
+}
+
+function setVisible(id, visible) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = visible ? '' : 'none';
+}
+
+function applyPlanUI() {
+  var plan = currentPlan();
+  document.getElementById('userPlan').textContent = plan + ' plan';
+  setVisible('nav-pos', hasFeature('pos'));
+  setVisible('nav-gunshow', hasFeature('gunShow'));
+  setVisible('nav-readiness', hasFeature('readiness'));
+  setVisible('nav-compliance', hasFeature('aiCompliance'));
+  setVisible('nav-migrate', hasFeature('migration'));
+  setVisible('adbookImportBtn', hasFeature('migration'));
+  setVisible('f4473-signature-section', hasFeature('esign4473'));
+  setVisible('ai-validate-btn', hasFeature('ai4473'));
+  var locBtn = document.getElementById('locationsAddBtn');
+  if (locBtn) locBtn.textContent = (hasFeature('multiLocation') || allLocations.length === 0) ? '+ Add Location' : 'Pro Required for More Locations';
+}
 
 // ── API helper ──────────────────────────────
 async function api(method, url, body) {
@@ -1821,11 +1913,12 @@ async function init() {
     currentUser = data.user;
     document.getElementById('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
     document.getElementById('userName').textContent   = currentUser.name;
-    document.getElementById('userPlan').textContent   = (currentUser.plan || 'free') + ' plan';
+    applyPlanUI();
     var h = new Date().getHours();
     var g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
     document.getElementById('dashGreeting').textContent = g + ', ' + currentUser.name.split(' ')[0];
     await Promise.all([loadDashboard(), loadFirearms(), loadCustomers(), loadSales()]);
+    maybeOpenGunShowFromUrl();
   } catch(e) {
     localStorage.removeItem('bs_token');
     window.location.href = '/';
@@ -1843,6 +1936,10 @@ function loadChartJS(cb) {
 
 // ── Navigation ───────────────────────────────
 function showPage(name) {
+  if (name === 'pos' && !requireFeatureUI('pos')) return;
+  if (name === 'readiness' && !requireFeatureUI('readiness')) return;
+  if (name === 'compliance' && !requireFeatureUI('aiCompliance')) return;
+  if (name === 'migrate' && !requireFeatureUI('migration')) return;
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('active');
@@ -2599,6 +2696,8 @@ async function loadLocations() {
 function renderLocations() {
   var el = document.getElementById('locations-list');
   if (!el) return;
+  var locBtn = document.getElementById('locationsAddBtn');
+  if (locBtn) locBtn.textContent = (hasFeature('multiLocation') || allLocations.length === 0) ? '+ Add Location' : 'Pro Required for More Locations';
   if (!allLocations.length) {
     el.innerHTML = '<p style="font-size:13px;color:var(--muted)">No locations added yet.</p>';
     return;
@@ -2618,6 +2717,10 @@ function renderLocations() {
 }
 
 function openLocationModal() {
+  if (!hasFeature('multiLocation') && allLocations.length >= 1) {
+    showUpgradeModal(FEATURE_MESSAGES.multiLocation);
+    return;
+  }
   editingLocationId = null;
   document.getElementById('locationModalTitle').textContent = 'Add Location';
   document.getElementById('locationSubmitBtn').textContent  = 'Add Location';
@@ -2649,6 +2752,10 @@ function closeLocationModal() {
 async function submitLocation() {
   var name = document.getElementById('loc-name').value.trim();
   if (!name) { toast('Location name is required', 'error'); return; }
+  if (!editingLocationId && !hasFeature('multiLocation') && allLocations.length >= 1) {
+    showUpgradeModal(FEATURE_MESSAGES.multiLocation);
+    return;
+  }
   var body = {
     name: name,
     address:    document.getElementById('loc-address').value.trim() || null,
@@ -2924,7 +3031,7 @@ async function submit4473() {
     q21d: getRadioVal('q21d'), q21e: getRadioVal('q21e'), q21f: getRadioVal('q21f'),
     q21g: getRadioVal('q21g'), q21h: getRadioVal('q21h'), q21i: getRadioVal('q21i'),
     q21j: getRadioVal('q21j'), q21k: getRadioVal('q21k'), q21l: getRadioVal('q21l'),
-    signature_data: (function(){ var c = document.getElementById('sig-canvas'); return (c && sigHasContent) ? c.toDataURL('image/png') : null; })(),
+    signature_data: hasFeature('esign4473') ? (function(){ var c = document.getElementById('sig-canvas'); return (c && sigHasContent) ? c.toDataURL('image/png') : null; })() : null,
     transaction_date: txdate,
     nics_transaction_number: document.getElementById('f-ntn').value.trim() || null,
     nics_result: nics,
@@ -2941,6 +3048,7 @@ async function submit4473() {
 
 // ── CSV Import ────────────────────────────────
 function openImportModal() {
+  if (!requireFeatureUI('migration')) return;
   importParsedRows = [];
   document.getElementById('importFile').value = '';
   document.getElementById('importPreview').style.display = 'none';
@@ -3011,6 +3119,7 @@ function showImportResult(msg, ok) {
 }
 
 async function doImport() {
+  if (!requireFeatureUI('migration')) return;
   if (!importParsedRows.length) return;
   document.getElementById('importSubmitBtn').disabled = true;
   try {
@@ -3327,6 +3436,7 @@ function exportSalesCSV() {
 
 // ── AI Compliance Checker ─────────────────────
 async function runComplianceCheck(type) {
+  if (!requireFeatureUI('aiCompliance')) return;
   var loading = document.getElementById('compliance-loading');
   var results = document.getElementById('compliance-results');
   var clean   = document.getElementById('compliance-clean');
@@ -3798,6 +3908,7 @@ init();
 
 // ── READINESS SCORE ─────────────────────────────
 async function loadReadiness() {
+  if (!requireFeatureUI('readiness')) return;
   var box = document.getElementById('readiness-content');
   box.innerHTML = '<p style="color:var(--muted);font-size:13px">Running compliance checks…</p>';
   try {
@@ -3839,6 +3950,7 @@ function loadMigrationFile(ev) {
 }
 
 async function dryRunMigration() {
+  if (!requireFeatureUI('migration')) return;
   var csv = document.getElementById('mig-csv').value.trim();
   var format = document.getElementById('mig-format').value;
   if (!csv) { toast('Paste or upload a CSV first', 'error'); return; }
@@ -3866,6 +3978,7 @@ async function dryRunMigration() {
 }
 
 async function commitMigration() {
+  if (!requireFeatureUI('migration')) return;
   if (!confirm('Import these records into your A&D book? Duplicate serial numbers will be skipped.')) return;
   var csv = document.getElementById('mig-csv').value.trim();
   var format = document.getElementById('mig-format').value;
@@ -4056,6 +4169,7 @@ function updatePosTotals() {
 }
 
 async function posCheckout() {
+  if (!requireFeatureUI('pos')) return;
   if (!_posCart.length) { toast('Cart is empty', 'error'); return; }
   var tax = parseFloat(document.getElementById('pos-tax').value || '0') || 0;
   var tender = [];
@@ -4103,6 +4217,7 @@ function posPrintReceipt(r, items, tender) {
 
 // ── AI 4473 PRE-SUBMIT VALIDATION ────────────────
 async function aiValidate4473() {
+  if (!requireFeatureUI('ai4473')) return;
   var form = document.getElementById('form4473') || document;
   function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
   function radio(name) { var el = document.querySelector('input[name="'+name+'"]:checked'); return el ? el.value : ''; }
@@ -4222,14 +4337,27 @@ function exitGunShow() {
   history.replaceState({}, '', '/app');
 }
 
+function enterGunShowMode() {
+  if (!requireFeatureUI('gunShow')) return;
+  window.location.href = '/app?gunshow=1';
+}
+
+function maybeOpenGunShowFromUrl() {
+  if (new URLSearchParams(location.search).get('gunshow') !== '1') return;
+  if (!hasFeature('gunShow')) {
+    history.replaceState({}, '', '/app');
+    showUpgradeModal(FEATURE_MESSAGES.gunShow);
+    return;
+  }
+  try { _gsQueue = JSON.parse(localStorage.getItem('bs_gs_queue') || '[]'); } catch(e) { _gsQueue = []; }
+  document.getElementById('gunShowMode').style.display = 'block';
+  gsUpdate();
+}
+
 // Auto-enter gun show mode via ?gunshow=1
 (function() {
   try {
-    if (new URLSearchParams(location.search).get('gunshow') === '1') {
-      _gsQueue = JSON.parse(localStorage.getItem('bs_gs_queue') || '[]');
-      document.getElementById('gunShowMode').style.display = 'block';
-      gsUpdate();
-    }
+    // Gun show mode is opened after /api/app/me resolves so plan gating is accurate.
   } catch(e) {}
   window.addEventListener('online', function() { gsUpdate(); gsSyncNow(); });
   window.addEventListener('offline', gsUpdate);

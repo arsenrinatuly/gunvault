@@ -93,6 +93,83 @@ function ok(s)      { return typeof s === 'string' && s.trim().length > 0; }
 function getIP(req) { return req.ip || req.connection?.remoteAddress || 'unknown'; }
 function isDupe(e)  { return e.code === '23505'; } // PostgreSQL unique_violation
 
+const PLAN_ORDER = ['free', 'starter', 'pro'];
+const PLAN_RULES = {
+  free: {
+    firearmsLimit: 500,
+    locationLimit: 1,
+    pos: false,
+    gunShow: false,
+    ai4473: false,
+    aiCompliance: false,
+    readiness: false,
+    migration: false,
+    multiLocation: false,
+    esign4473: false,
+  },
+  starter: {
+    firearmsLimit: null,
+    locationLimit: 1,
+    pos: true,
+    gunShow: true,
+    ai4473: false,
+    aiCompliance: false,
+    readiness: false,
+    migration: false,
+    multiLocation: false,
+    esign4473: true,
+  },
+  pro: {
+    firearmsLimit: null,
+    locationLimit: null,
+    pos: true,
+    gunShow: true,
+    ai4473: true,
+    aiCompliance: true,
+    readiness: true,
+    migration: true,
+    multiLocation: true,
+    esign4473: true,
+  },
+};
+
+function normalizePlan(plan) {
+  return PLAN_RULES[plan] ? plan : 'free';
+}
+
+function getPlanRules(plan) {
+  return PLAN_RULES[normalizePlan(plan)];
+}
+
+function hasPlan(plan, requiredPlan) {
+  return PLAN_ORDER.indexOf(normalizePlan(plan)) >= PLAN_ORDER.indexOf(normalizePlan(requiredPlan));
+}
+
+async function getCurrentUserRecord(req) {
+  if (!req.currentUserRecord) {
+    req.currentUserRecord = await stmts.getUserById(req.user.id);
+    if (req.currentUserRecord) req.currentUserRecord.plan = normalizePlan(req.currentUserRecord.plan);
+  }
+  return req.currentUserRecord;
+}
+
+function planError(res, message, requiredPlan) {
+  return res.status(403).json({ error: message, upgrade: true, required_plan: requiredPlan });
+}
+
+async function requireFeature(req, res, featureKey, requiredPlan, message) {
+  const user = await getCurrentUserRecord(req);
+  if (!user) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return null;
+  }
+  if (!getPlanRules(user.plan)[featureKey]) {
+    planError(res, message, requiredPlan);
+    return null;
+  }
+  return user;
+}
+
 function escHtml(s) {
   if (s == null) return '';
   return String(s)
@@ -158,7 +235,7 @@ app.post('/api/signup', async (req, res) => {
     const verifyCode = String(Math.floor(100000 + Math.random() * 900000));
     const verifyExpires = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 min
     await stmts.setEmailVerifyCode(user.id, verifyCode, verifyExpires);
-    mailer.sendVerificationCode({ name: user.name, email: user.email }, verifyCode).catch(() => {});
+    await mailer.sendVerificationCode({ name: user.name, email: user.email }, verifyCode).catch(e => console.error('[verify-email]', e));
 
     res.status(201).json({ needs_verification: true, userId: user.id, email: user.email });
   } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
@@ -172,7 +249,7 @@ app.post('/api/verify-email', async (req, res) => {
     const user = await stmts.checkVerifyCode(parseInt(userId), String(code).trim());
     if (!user) return res.status(400).json({ error: 'Invalid or expired code. Request a new one.' });
     await stmts.markEmailVerified(user.id);
-    mailer.sendWelcome(user).catch(() => {});
+    await mailer.sendWelcome(user).catch(e => console.error('[welcome-email]', e));
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ message: 'Email verified!', token, user: { id: user.id, name: user.name, email: user.email, plan: user.plan || 'free', ffl_number: user.ffl_number, onboarding_done: user.onboarding_done } });
   } catch(e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
@@ -213,15 +290,17 @@ app.post('/api/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
     if (!isEmail(email)) return res.status(400).json({ error: 'Valid email required' });
-    res.json({ message: 'If that email exists, a reset link has been sent.' }); // always succeed
+    // IMPORTANT: do all work BEFORE responding — Vercel kills function after res.json()
     const u = await stmts.getUserByEmail(email.toLowerCase().trim());
-    if (!u) return;
-    const token   = crypto.randomBytes(32).toString('hex');
-    const expires = new Date(Date.now() + 3600000).toISOString();
-    await stmts.cleanOldTokens();
-    await stmts.createResetToken({ user_id: u.id, token, expires_at: expires });
-    mailer.sendPasswordReset(u, token).catch(console.error);
-  } catch(e) { console.error(e); }
+    if (u) {
+      const token   = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 3600000).toISOString();
+      await stmts.cleanOldTokens();
+      await stmts.createResetToken({ user_id: u.id, token, expires_at: expires });
+      await mailer.sendPasswordReset(u, token);
+    }
+    res.json({ message: 'If that email exists, a reset link has been sent.' });
+  } catch(e) { console.error('[forgot-password]', e); res.status(500).json({ error: 'Server error' }); }
 });
 
 app.post('/api/reset-password', async (req, res) => {
@@ -331,6 +410,15 @@ app.post('/api/app/locations', requireAuth, async (req, res) => {
   try {
     const { name, address, ffl_number, is_primary } = req.body;
     if (!ok(name)) return res.status(400).json({ error: 'Location name required' });
+    const user = await getCurrentUserRecord(req);
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    const rules = getPlanRules(user.plan);
+    if (rules.locationLimit != null) {
+      const existing = await stmts.getLocations(req.user.id);
+      if (existing.length >= rules.locationLimit) {
+        return planError(res, 'Multi-location support is available on Pro only.', 'pro');
+      }
+    }
     if (is_primary) await stmts.setPrimaryLoc(req.user.id);
     const r = await stmts.addLocation({ user_id: req.user.id, name, address: address || null, ffl_number: ffl_number || null, is_primary: is_primary ? 1 : 0 });
     res.status(201).json({ message: 'Location added', id: r.id });
@@ -365,11 +453,14 @@ app.post('/api/app/firearms', requireAuth, async (req, res) => {
     const { manufacturer, importer, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes, location_id, is_nfa, nfa_type, nfa_form_type, nfa_form_number } = req.body;
     if (!ok(manufacturer)||!ok(model)||!ok(serial_number)||!ok(caliber)||!ok(type)||!ok(acquisition_date)||!ok(acquisition_from))
       return res.status(400).json({ error: 'All required fields must be filled' });
-    // Free plan: max 50 total firearms
-    const u = await stmts.getUserById(req.user.id);
-    if (u && u.plan === 'free') {
+    const u = await getCurrentUserRecord(req);
+    if (!u) return res.status(401).json({ error: 'Unauthorized' });
+    const rules = getPlanRules(u.plan);
+    if (rules.firearmsLimit != null) {
       const cnt = await stmts.countFirearms(req.user.id);
-      if (cnt && cnt.total >= 50) return res.status(403).json({ error: 'Free plan limit reached (50 firearms). Upgrade to add more.', limit: true });
+      if (cnt && cnt.total >= rules.firearmsLimit) {
+        return res.status(403).json({ error: `Free plan limit reached (${rules.firearmsLimit} A&D records). Upgrade to add more.`, limit: true });
+      }
     }
     const r = await stmts.addFirearm({ user_id: req.user.id, location_id: location_id || null, manufacturer, importer: importer || null, model, serial_number, caliber, type, acquisition_date, acquisition_from, notes: notes || null, is_nfa: !!is_nfa, nfa_type: nfa_type || null, nfa_form_type: nfa_form_type || null, nfa_form_number: nfa_form_number || null });
     audit(req, 'firearms', r.id, 'ADD', null, { manufacturer, model, serial_number, caliber, type, acquisition_date });
@@ -383,6 +474,8 @@ app.post('/api/app/firearms', requireAuth, async (req, res) => {
 // ── Bulk CSV import ──────────────────────────
 app.post('/api/app/firearms/import', requireAuth, async (req, res) => {
   try {
+    const user = await requireFeature(req, res, 'migration', 'pro', 'CSV migration tools are available on Pro only.');
+    if (!user) return;
     const { rows } = req.body;
     if (!Array.isArray(rows) || !rows.length) return res.status(400).json({ error: 'No rows provided' });
     let imported = 0, skipped = 0, errors = [];
@@ -447,12 +540,6 @@ app.post('/api/app/customers', requireAuth, async (req, res) => {
   try {
     const { first_name, last_name, email, phone, address, id_type, id_number, dob, notes } = req.body;
     if (!ok(first_name)||!ok(last_name)) return res.status(400).json({ error: 'Name required' });
-    // Free plan: max 50 customers
-    const u = await stmts.getUserById(req.user.id);
-    if (u && u.plan === 'free') {
-      const cnt = await stmts.countCustomers(req.user.id);
-      if (cnt && cnt.total >= 50) return res.status(403).json({ error: 'Free plan limit reached (50 customers). Upgrade to add more.', limit: true });
-    }
     const r = await stmts.addCustomer({ user_id: req.user.id, first_name, last_name, email: email || null, phone: phone || null, address: address || null, id_type: id_type || null, id_number: id_number || null, dob: dob || null, notes: notes || null });
     res.status(201).json({ message: 'Customer added', id: r.id });
   } catch(e) { res.status(500).json({ error: 'Server error' }); }
@@ -480,6 +567,8 @@ app.get('/api/app/form4473', requireAuth, async (req, res) => {
 app.post('/api/app/form4473', requireAuth, async (req, res) => {
   try {
     const d = req.body;
+    const user = await getCurrentUserRecord(req);
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
     const fullName = [d.transferee_last, d.transferee_first, d.transferee_middle].filter(Boolean).join(', ');
     const r = await stmts.add4473({
       user_id:              req.user.id,
@@ -502,7 +591,7 @@ app.post('/api/app/form4473', requireAuth, async (req, res) => {
       is_domestic_violence:    d.q21i === 'yes' ? 1 : 0,
       is_renounced_citizen:    d.q21j === 'yes' ? 1 : 0,
       is_nonimmigrant_alien:   d.q21l === 'yes' ? 1 : 0,
-      signature_data:          d.signature_data || null,
+      signature_data:          getPlanRules(user.plan).esign4473 ? (d.signature_data || null) : null,
       nics_transaction:     d.nics_transaction_number || d.nics_transaction || null,
       nics_result:          d.nics_result         || null,
       transfer_date:        d.transaction_date    || d.transfer_date    || null,
@@ -530,12 +619,18 @@ app.get('/api/app/audit-log', requireAuth, async (req, res) => {
 
 // ── Sales / POS ───────────────────────────────
 app.get('/api/app/sales', requireAuth, async (req, res) => {
-  try { res.json({ sales: await stmts.getSales(req.user.id) }); }
+  try {
+    const user = await requireFeature(req, res, 'pos', 'starter', 'POS and barcode scanning are available on Starter or Pro.');
+    if (!user) return;
+    res.json({ sales: await stmts.getSales(req.user.id) });
+  }
   catch(e) { res.status(500).json({ error: 'Server error' }); }
 });
 
 app.post('/api/app/sales', requireAuth, async (req, res) => {
   try {
+    const user = await requireFeature(req, res, 'pos', 'starter', 'POS and barcode scanning are available on Starter or Pro.');
+    if (!user) return;
     const { customer_id, firearm_id, sale_date, amount, payment_method, notes } = req.body;
     if (!ok(sale_date)) return res.status(400).json({ error: 'Sale date required' });
     if (isNaN(parseFloat(amount))) return res.status(400).json({ error: 'Valid amount required' });
@@ -547,6 +642,8 @@ app.post('/api/app/sales', requireAuth, async (req, res) => {
 
 app.patch('/api/app/sales/:id', requireAuth, async (req, res) => {
   try {
+    const user = await requireFeature(req, res, 'pos', 'starter', 'POS and barcode scanning are available on Starter or Pro.');
+    if (!user) return;
     const { customer_id, firearm_id, sale_date, amount, payment_method, notes } = req.body;
     if (!ok(sale_date)) return res.status(400).json({ error: 'Sale date required' });
     await stmts.updateSale({ customer_id: customer_id || null, firearm_id: firearm_id || null, sale_date, amount: parseFloat(amount) || 0, payment_method: payment_method || 'cash', notes: notes || null, id: req.params.id, user_id: req.user.id });
@@ -555,7 +652,11 @@ app.patch('/api/app/sales/:id', requireAuth, async (req, res) => {
 });
 
 app.delete('/api/app/sales/:id', requireAuth, async (req, res) => {
-  try { await stmts.deleteSale(req.params.id, req.user.id); res.json({ message: 'Deleted' }); }
+  try {
+    const user = await requireFeature(req, res, 'pos', 'starter', 'POS and barcode scanning are available on Starter or Pro.');
+    if (!user) return;
+    await stmts.deleteSale(req.params.id, req.user.id); res.json({ message: 'Deleted' });
+  }
   catch(e) { res.status(500).json({ error: 'Server error' }); }
 });
 
@@ -747,6 +848,8 @@ app.patch('/api/app/form4473/:id/nics', requireAuth, async (req, res) => {
 // ── AI Compliance Checker ─────────────────────
 app.post('/api/app/compliance-check', requireAuth, async (req, res) => {
   try {
+    const user = await requireFeature(req, res, 'aiCompliance', 'pro', 'AI compliance checks are available on Pro only.');
+    if (!user) return;
     const { type } = req.body;
     if (!['adbook', '4473', 'full'].includes(type))
       return res.status(400).json({ error: 'type must be adbook, 4473, or full' });
@@ -874,6 +977,8 @@ Return ONLY the JSON object, no other text.`;
 // ── POS Checkout (real multi-item transaction with split tender) ──
 app.post('/api/app/pos/checkout', requireAuth, async (req, res) => {
   try {
+    const user = await requireFeature(req, res, 'pos', 'starter', 'POS and barcode scanning are available on Starter or Pro.');
+    if (!user) return;
     const { customer_id, items, tax, tender, notes } = req.body;
     if (!Array.isArray(items) || !items.length) return res.status(400).json({ error: 'Cart is empty' });
 
@@ -931,7 +1036,11 @@ app.post('/api/app/pos/checkout', requireAuth, async (req, res) => {
 });
 
 app.get('/api/app/pos/history', requireAuth, async (req, res) => {
-  try { res.json({ txns: await stmts.getPosTxns(req.user.id) }); }
+  try {
+    const user = await requireFeature(req, res, 'pos', 'starter', 'POS and barcode scanning are available on Starter or Pro.');
+    if (!user) return;
+    res.json({ txns: await stmts.getPosTxns(req.user.id) });
+  }
   catch(e) { res.status(500).json({ error: 'Server error' }); }
 });
 
@@ -1014,6 +1123,8 @@ const IMPORTERS = {
 // Dry-run (validate only, show errors, don't commit)
 app.post('/api/app/import/dry-run', requireAuth, async (req, res) => {
   try {
+    const user = await requireFeature(req, res, 'migration', 'pro', 'CSV migration tools are available on Pro only.');
+    if (!user) return;
     const { csv, format, rows: preRows } = req.body;
     const fmt = IMPORTERS[format] ? format : 'generic';
     const mapper = IMPORTERS[fmt];
@@ -1035,6 +1146,8 @@ app.post('/api/app/import/dry-run', requireAuth, async (req, res) => {
 // Commit import
 app.post('/api/app/import/commit', requireAuth, async (req, res) => {
   try {
+    const user = await requireFeature(req, res, 'migration', 'pro', 'CSV migration tools are available on Pro only.');
+    if (!user) return;
     const { csv, format, rows: preRows } = req.body;
     const fmt = IMPORTERS[format] ? format : 'generic';
     const mapper = IMPORTERS[fmt];
@@ -1061,6 +1174,8 @@ app.post('/api/app/import/commit', requireAuth, async (req, res) => {
 // ── AI Pre-submit 4473 Validation ──
 app.post('/api/app/validate-4473', requireAuth, async (req, res) => {
   try {
+    const user = await requireFeature(req, res, 'ai4473', 'pro', 'AI 4473 pre-submit validation is available on Pro only.');
+    if (!user) return;
     const d = req.body || {};
     // Local sanity checks (don't need AI for these)
     const issues = [];
@@ -1114,6 +1229,8 @@ app.post('/api/app/validate-4473', requireAuth, async (req, res) => {
 // ── Inspection Readiness Score ──
 app.get('/api/app/readiness-score', requireAuth, async (req, res) => {
   try {
+    const user = await requireFeature(req, res, 'readiness', 'pro', 'Inspection readiness score is available on Pro only.');
+    if (!user) return;
     const uid = req.user.id;
     const [firearms, forms, u] = await Promise.all([
       stmts.getFirearms(uid), stmts.get4473s(uid), stmts.getUserById(uid),
@@ -1152,6 +1269,8 @@ app.get('/api/app/readiness-score', requireAuth, async (req, res) => {
 // ── Multi-handgun sale detection (ATF 3310.4) ──
 app.get('/api/app/multi-sale/check', requireAuth, async (req, res) => {
   try {
+    const user = await requireFeature(req, res, 'pos', 'starter', 'Multi-sale alerts are available on Starter or Pro.');
+    if (!user) return;
     const uid = req.user.id;
     // Find any 4473s to the same transferee within 5 business days for 2+ handguns
     const recent = await all(
@@ -1216,6 +1335,8 @@ app.patch('/api/app/onboarding/step', requireAuth, async (req, res) => {
 // ── Offline sync queue (idempotent replay) ──
 app.post('/api/app/sync', requireAuth, async (req, res) => {
   try {
+    const user = await requireFeature(req, res, 'gunShow', 'starter', 'Gun Show Mode is available on Starter or Pro.');
+    if (!user) return;
     const { ops } = req.body;
     if (!Array.isArray(ops)) return res.status(400).json({ error: 'ops must be an array' });
     const results = [];
@@ -1476,6 +1597,7 @@ app.get('/terms',                  (req, res) => res.sendFile(path.join(__dirnam
 app.get('/blog',                   (req, res) => res.sendFile(path.join(__dirname, 'public', 'blog.html')));
 app.get('/atf-inspection-guide',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'atf-inspection-guide.html')));
 app.get('/best-ffl-software',      (req, res) => res.sendFile(path.join(__dirname, 'public', 'best-ffl-software.html')));
+app.get('/electronic-bound-book-requirements-2026', (req, res) => res.sendFile(path.join(__dirname, 'public', 'electronic-bound-book-requirements-2026.html')));
 app.get('*',                       (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ─── Start (local only — Vercel uses module.exports) ───

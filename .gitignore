@@ -8,3 +8,5 @@ npm-debug.log*
 Thumbs.db
 
 .vercel
+emails.json
+sent_emails.log
